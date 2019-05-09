@@ -3,7 +3,7 @@
 """
 File: fijipytoools.py
 Author: Sebastian Rhode
-Date: 2019_04_25
+Date: 2019_05_09
 """
 
 import os
