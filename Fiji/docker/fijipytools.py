@@ -47,7 +47,8 @@ class ImportTools:
                  openallseries=True,
                  showomexml=False,
                  attach=False,
-                 autoscale=True):
+                 autoscale=True,
+                 imageID=0):
 
         # stitchtiles = option of CZIReader to return the raw tiles as
         # individual series rather than the auto-stitched images
@@ -64,6 +65,13 @@ class ImportTools:
         reader.setId(imagefile)
         metainfo['SeriesCount_BF'] = reader.getSeriesCount()
         reader.close()
+
+        # read dimensions TZCXY from OME metadata
+        metainfo['SizeT'] = omeMeta.getPixelsSizeT(imageID).getValue()
+        metainfo['SizeZ'] = omeMeta.getPixelsSizeZ(imageID).getValue()
+        metainfo['SizeC'] = omeMeta.getPixelsSizeC(imageID).getValue()
+        metainfo['SizeX'] = omeMeta.getPixelsSizeX(imageID).getValue()
+        metainfo['SizeY'] = omeMeta.getPixelsSizeY(imageID).getValue()
 
         # get the scaling for XYZ
         physSizeX = omeMeta.getPixelsPhysicalSizeX(0)
@@ -82,6 +90,7 @@ class ImportTools:
         if physSizeZ is None:
             metainfo['ScaleZ'] = None
 
+        # if image file is Carl Zeiss Image - CZI
         if metainfo['Extension'] == '.czi':
 
             # read the CZI file using the CZIReader
@@ -94,7 +103,8 @@ class ImportTools:
                                                 showomexml=showomexml,
                                                 attach=attach,
                                                 autoscale=autoscale)
-
+        
+        # if image file is not Carl Zeiss Image - CZI
         if metainfo['Extension'] != '.czi':
 
             # read the imagefile using the correct method
@@ -122,7 +132,7 @@ class ImportTools:
                showomexml=False,
                autoscale=True):
 
-        # initialiez the importer options
+        # initialize the importer options
         options = ImporterOptions()
         options.setOpenAllSeries(openallseries)
         options.setShowOMEXML(showomexml)
@@ -134,7 +144,6 @@ class ImportTools:
         # and set pyramidlevel = 0 (1st level) since there will be only one
         # unless setflatres = True --> read pyramid levels
 
-        #series = metainfo['seriesCount']
         series = metainfo['SeriesCount_BF']
         if setconcat and setflatres:
             series = 1
