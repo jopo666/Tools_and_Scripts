@@ -118,13 +118,14 @@ def run(imagefile):
 
     if RANKFILTER != 'NONE':
         # apply filter
-        log.info('Apply Filter: ' + RANKFILTER)
+        log.info('Apply Filter      : ' + RANKFILTER)
         imp = FilterTools.apply_filter(imp,
                                        radius=RADIUS,
                                        filtertype=RANKFILTER)
     if THRESHOLD != 'NONE':
         # apply threshold
-        log.info('Apply Threshold: ' + THRESHOLD)
+        log.info('Apply Threshold   : ' + THRESHOLD)
+        log.info('Correction Factor : ' + str(CORRFACTOR))
         imp = ThresholdTools.apply_threshold(imp,
                                              method=THRESHOLD,
                                              background_threshold=THRESHOLD_BGRD,
