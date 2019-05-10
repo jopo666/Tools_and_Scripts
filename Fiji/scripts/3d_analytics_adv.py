@@ -1,5 +1,11 @@
 # @File(label = "Image File", persist=True) FILENAME
+# @Boolean(label = "Extract Channel", value=True, persist=True) EXTRACT_CHANNEL
 # @Integer(label = "Select Channel", value=1, persist=True) CHANNEL2ANAlYSE
+# @String(label = "Select RankFilter", choices={"NONE", "MEDIAN", "MIN", "MAX", "MEAN", "VARIANCE", "OPEN", "DESPECKLE"}, style="listBox", value="NONE", persist=True) RANKFILTER
+# @Float(label = "Filter Radius", value=5.0, persist=False) RADIUS
+# @String(label = "Select Threshold", choices={"NONE", "Otsu", "Triangle", "IJDefault", "Huang", "MaxEntropy", "Mean", "Shanbhag", "Yen", "Li"}, style="listBox", value="NONE", persist=True) THRESHOLD
+# @String(label = "Threshold Background", choices={"black", "white"}, style="listBox", value="black", persist=True) THRESHOLD_BGRD
+# @Float(label = "Threshold Correction Factor", value=1.00,persist=True) CORRFACTOR
 # @Boolean(label = "Fill Holes", value=True, persist=True) FILL_HOLES
 # @String(label = "Label Connectivity", choices={"6", "26"}, style="listBox", value="6", persist=True) LABEL_CONNECT
 # @Integer(label = "MinVoxelSize", value=200, persist=True) MINVOXSIZE
@@ -9,8 +15,14 @@
 # @Boolean(label = "Save Result File as TXT", value=True, persist=True) RESULTSAVE
 # @Boolean(label = "Run in headless mode", value=False, persist=False) HEADLESS
 # @OUTPUT String FILENAME
+# @OUTPUT Boolean EXTRACT_CHANNEL
 # @OUTPUT Integer CHANNEL2ANAlYSE
-# @OUTPUT Boolean FILL_HOLES
+# @OUTPUT String RANKFILTER
+# @OUTPUT float RADIUS
+# @OUTPUT String THRESHOLD
+# @OUTPUT String THRESHOLD_BGRD
+# @OUTPUT String CORRFACTOR
+# @OUTPUT Integer FILL_HOLES
 # @OUTPUT String LABEL_CONNECT
 # @OUTPUT Integer MINVOXSIZE
 # @OUTPUT Boolean LABEL_COLORIZE
@@ -24,10 +36,10 @@
 
 
 """
-File: 3d_analytics_CH.py
+File: 3d_analytics_adv.py
 Author: Sebastian Rhode
 Date: 2019_05_10
-Version: 0.6
+Version: 0.1
 """
 
 # append path
@@ -96,12 +108,32 @@ def run(imagefile):
     # do the processing
     log.info('Start Processing ...')
 
-    # get the correct channel
-    if MetaInfo['SizeC'] > 1:
-        log.info('Extract Channel  : ' + str(MetaInfo['ChannelCount']))
-        imps = ChannelSplitter.split(imp)
-        imp = imps[CHINDEX-1]
 
+    if EXTRACT_CHANNEL:
+        # get the correct channel
+        if MetaInfo['SizeC'] > 1:
+            log.info('Extract Channel  : ' + str(MetaInfo['ChannelCount']))
+            imps = ChannelSplitter.split(imp)
+            imp = imps[CHINDEX-1]
+
+    if RANKFILTER != 'NONE':
+        # apply filter
+        log.info('Apply Filter: ' + RANKFILTER)
+        imp = FilterTools.apply_filter(imp,
+                                       radius=RADIUS,
+                                       filtertype=RANKFILTER)
+    if THRESHOLD != 'NONE':
+        # apply threshold
+        log.info('Apply Threshold: ' + THRESHOLD)
+        imp = ThresholdTools.apply_threshold(imp,
+                                             method=THRESHOLD,
+                                             background_threshold=THRESHOLD_BGRD,
+                                             corrf=CORRFACTOR)
+                                             
+    # comvert to 8bit grayscale
+    ic = ImageConverter(imp)
+    ic.convertToGray8()
+    
     if FILL_HOLES:
         # 3D fill holes	
         log.info('3D Fill Holes ...')
@@ -115,7 +147,7 @@ def run(imagefile):
     normalize = True
     dynamic = 2
     connectivity = LABEL_CONNECT
-    log.info('Applying Run Watershed to separate particles ...')
+    log.info('Run Watershed to separate particles ...')
     #dist = BinaryImages.distanceMap(imp.getImageStack(), weights, normalize)
     dist = BinaryImages.distanceMap(imp, weights, normalize)
     Images3D.invert(dist)
@@ -123,7 +155,7 @@ def run(imagefile):
     imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp, dynamic, connectivity, 32, False )  
     
     # extend borders
-    log.info('Applying Border Extension ...')
+    log.info('Border Extension ...')
     # create BorderManager and add Zeros in all dimensions
     bmType = BorderManager3D.Type.fromLabel("BLACK")
     bm = bmType.createBorderManager(imp)
