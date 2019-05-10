@@ -1,5 +1,6 @@
 # @File(label = "Image File", persist=True) FILENAME
 # @Integer(label = "Select Channel", value=1, persist=True) CHANNEL2ANAlYSE
+# @Boolean(label = "Fill Holes", value=True, persist=True) FILL_HOLES
 # @String(label = "Label Connectivity", choices={"6", "26"}, style="listBox", value="6", persist=True) LABEL_CONNECT
 # @Integer(label = "MinVoxelSize", value=200, persist=True) MINVOXSIZE
 # @Boolean(label = "Colorize Labels", value=True, persist=True) LABEL_COLORIZE
@@ -8,7 +9,8 @@
 # @Boolean(label = "Save Result File as TXT", value=True, persist=True) RESULTSAVE
 # @Boolean(label = "Run in headless mode", value=False, persist=False) HEADLESS
 # @OUTPUT String FILENAME
-# @OUTPUT Integer CHANNEL2ANAlYSE
+# @OUTPUT Integer FILL_HOLES
+# @OUTPUT Boolean LABEL_COLORIZE
 # @OUTPUT String LABEL_CONNECT
 # @OUTPUT Integer MINVOXSIZE
 # @OUTPUT Boolean LABEL_COLORIZE
@@ -24,8 +26,8 @@
 """
 File: 3d_analytics_CH.py
 Author: Sebastian Rhode
-Date: 2019_03_14
-Version: 0.5
+Date: 2019_05_10
+Version: 0.6
 """
 
 # append path
@@ -58,7 +60,7 @@ from jarray import zeros
 from org.scijava.vecmath import Point3f, Color3f
 
 # MorphoLibJ imports
-from inra.ijpb.binary import BinaryImages
+from inra.ijpb.binary import BinaryImages, ChamferWeights3D
 from inra.ijpb.morphology import MinimaAndMaxima3D, Morphology, Strel3D
 from inra.ijpb.watershed import Watershed
 from inra.ijpb.label import LabelImages
@@ -66,7 +68,11 @@ from inra.ijpb.plugins import ParticleAnalysis3DPlugin, BoundingBox3DPlugin, Ext
 from inra.ijpb.data.border import BorderManager3D, ReplicatedBorder3D
 from inra.ijpb.util.ColorMaps import CommonLabelMaps
 from inra.ijpb.util import CommonColors
-from inra.ijpb.plugins import DistanceTransformWatershed3D
+from inra.ijpb.plugins import DistanceTransformWatershed3D, FillHolesPlugin
+from inra.ijpb.data.image import Images3D
+from inra.ijpb.watershed import ExtendedMinimaWatershed
+from inra.ijpb.morphology import Reconstruction
+from inra.ijpb.morphology import Reconstruction3D
 
 ############################################################################
 
@@ -84,33 +90,48 @@ def run(imagefile):
         log.info('Resolution Count : ' + str(MetaInfo['ResolutionCount']))
     if 'SeriesCount' in MetaInfo:
         log.info('SeriesCount      : ' + str(MetaInfo['SeriesCount']))
-    if 'ChannelCount' in MetaInfo:
-        log.info('Channel Count    : ' + str(MetaInfo['ChannelCount']))
+    if 'SizeC' in MetaInfo:
+        log.info('Channel Count    : ' + str(MetaInfo['SizeC']))
 
     # do the processing
     log.info('Start Processing ...')
 
     # get the correct channel
-    if MetaInfo['ChannelCount'] > 1:
+    if MetaInfo['SizeC'] > 1:
         log.info('Extract Channel  : ' + str(MetaInfo['ChannelCount']))
         imps = ChannelSplitter.split(imp)
         imp = imps[CHINDEX-1]
 
-    # 3D fill holes
+    if FILL_HOLES:
+        # 3D fill holes	
+        log.info('3D Fill Holes ...')
+        imp = Reconstruction3D.fillHoles(imp.getImageStack())
 
-    # 3d DistanceTransformWatershed3D on the stack
-    #DistanceTransformWatershed3D.run(imp, "distances=[Borgefors (3,4,5)] output=[16 bits] normalize dynamic=2 connectivity=6")
-    #IJ.run(imp, "Distance Transform Watershed 3D", "distances=[Borgefors (3,4,5)] output=[16 bits] normalize dynamic=2 connectivity=6")
-
+    if not FILL_HOLES:
+        imp = imp.getImageStack()
+    
+    # run watershed on stack
+    weights = ChamferWeights3D.BORGEFORS.getFloatWeights()
+    normalize = True
+    dynamic = 2
+    connectivity = LABEL_CONNECT
+    log.info('Applying Run Watershed to separate particles ...')
+    #dist = BinaryImages.distanceMap(imp.getImageStack(), weights, normalize)
+    dist = BinaryImages.distanceMap(imp, weights, normalize)
+    Images3D.invert(dist)
+    #imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp.getImageStack(), dynamic, connectivity, 32, False )  
+    imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp, dynamic, connectivity, 32, False )  
     
     # extend borders
     log.info('Applying Border Extension ...')
     # create BorderManager and add Zeros in all dimensions
     bmType = BorderManager3D.Type.fromLabel("BLACK")
-    bm = bmType.createBorderManager(imp.getStack())
+    bm = bmType.createBorderManager(imp)
+    #bm = bmType.createBorderManager(imp.getStack())
     BorderExt = ExtendBordersPlugin()
     # extend border by always exb
-    imp = BorderExt.process(imp.getStack(), EXB, EXB, EXB, EXB, EXB, EXB, bm)
+    #imp = BorderExt.process(imp.getStack(), EXB, EXB, EXB, EXB, EXB, EXB, bm)
+    imp = BorderExt.process(imp, EXB, EXB, EXB, EXB, EXB, EXB, bm)
     # convert back to ImgPlus
     pastack = ImagePlus('Particles', imp)
 
@@ -184,10 +205,8 @@ log.info('Minimun Voxel Size    : ' + str(MINVOXSIZE))
 log.info('Headless Mode         : ' + str(HEADLESS))
 log.info('------------  START IMAGE ANALYSIS ------------')
 
-
 # run image analysis pipeline
 objstack, results, labels = run(imagefile)
-
 
 # show objects
 log.info('Show Objects inside stack ...')
