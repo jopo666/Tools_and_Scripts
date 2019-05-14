@@ -496,7 +496,7 @@ class ThresholdTools:
             if method == 'Yen':
                 lowthresh = Auto_Threshold.Yen(hist)
             if method == 'Li':
-                lowthresh = Auto_Threshold.List(hist)
+                lowthresh = Auto_Threshold.Li(hist)
 
             # apply correction factor
             lowth_corr = int(round(lowthresh * corrf, 0))

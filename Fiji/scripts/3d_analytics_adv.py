@@ -4,9 +4,9 @@
 # @String(label = "Select RankFilter", choices={"NONE", "MEDIAN", "MIN", "MAX", "MEAN", "VARIANCE", "OPEN", "DESPECKLE"}, style="listBox", value="NONE", persist=True) RANKFILTER
 # @Float(label = "Filter Radius", value=5.0, persist=False) RADIUS
 # @String(label = "Select Threshold", choices={"NONE", "Otsu", "Triangle", "IJDefault", "Huang", "MaxEntropy", "Mean", "Shanbhag", "Yen", "Li"}, style="listBox", value="NONE", persist=True) THRESHOLD
-# @String(label = "Threshold Background", choices={"black", "white"}, style="listBox", value="black", persist=True) THRESHOLD_BGRD
 # @Float(label = "Threshold Correction Factor", value=1.00,persist=True) CORRFACTOR
 # @Boolean(label = "Fill Holes", value=True, persist=True) FILL_HOLES
+# @Boolean(label = "Run Watershed", value=True, persist=True) WATERSHED
 # @String(label = "Label Connectivity", choices={"6", "26"}, style="listBox", value="6", persist=True) LABEL_CONNECT
 # @Integer(label = "MinVoxelSize", value=200, persist=True) MINVOXSIZE
 # @Boolean(label = "Colorize Labels", value=True, persist=True) LABEL_COLORIZE
@@ -20,9 +20,9 @@
 # @OUTPUT String RANKFILTER
 # @OUTPUT float RADIUS
 # @OUTPUT String THRESHOLD
-# @OUTPUT String THRESHOLD_BGRD
 # @OUTPUT String CORRFACTOR
-# @OUTPUT Integer FILL_HOLES
+# @OUTPUT Boolean FILL_HOLES
+# @OUTPUT Boolean WATERSHED
 # @OUTPUT String LABEL_CONNECT
 # @OUTPUT Integer MINVOXSIZE
 # @OUTPUT Boolean LABEL_COLORIZE
@@ -128,7 +128,7 @@ def run(imagefile):
         log.info('Correction Factor : ' + str(CORRFACTOR))
         imp = ThresholdTools.apply_threshold(imp,
                                              method=THRESHOLD,
-                                             background_threshold=THRESHOLD_BGRD,
+                                             background_threshold='black',
                                              corrf=CORRFACTOR)
                                              
     # comvert to 8bit grayscale
@@ -143,17 +143,18 @@ def run(imagefile):
     if not FILL_HOLES:
         imp = imp.getImageStack()
     
-    # run watershed on stack
-    weights = ChamferWeights3D.BORGEFORS.getFloatWeights()
-    normalize = True
-    dynamic = 2
-    connectivity = LABEL_CONNECT
-    log.info('Run Watershed to separate particles ...')
-    #dist = BinaryImages.distanceMap(imp.getImageStack(), weights, normalize)
-    dist = BinaryImages.distanceMap(imp, weights, normalize)
-    Images3D.invert(dist)
-    #imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp.getImageStack(), dynamic, connectivity, 32, False )  
-    imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp, dynamic, connectivity, 32, False )  
+    if WATERSHED:
+        # run watershed on stack
+        weights = ChamferWeights3D.BORGEFORS.getFloatWeights()
+        normalize = True
+        dynamic = 2
+        connectivity = LABEL_CONNECT
+        log.info('Run Watershed to separate particles ...')
+        #dist = BinaryImages.distanceMap(imp.getImageStack(), weights, normalize)
+        dist = BinaryImages.distanceMap(imp, weights, normalize)
+        Images3D.invert(dist)
+        #imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp.getImageStack(), dynamic, connectivity, 32, False )  
+        imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp, dynamic, connectivity, 32, False )  
     
     # extend borders
     log.info('Border Extension ...')
@@ -248,22 +249,30 @@ objstack.show()
 log.info('Show ResultsTable ...')
 results.show('3D Objects')
 
-outputimagepath = os.path.splitext(imagefile)[0] + SUFFIX_PA + '.' + SAVEFORMAT
+basename = os.path.splitext(imagefile)[0]
+# remove the extra .ome before reassembling the filename
+if basename[-4:] == '.ome':
+    basename = basename[:-4]
+
+outputimagepath = basename + SUFFIX_PA + '.' + SAVEFORMAT
 
 if PASAVE:
     log.info('Start Saving ...')
     savepath_objstack = ExportTools.savedata(objstack,
                                              outputimagepath,
-                                             extension=SAVEFORMAT)
+                                             extension=SAVEFORMAT,
+                                             replace=True)
 
     log.info('Saved Processed Image to : ' + savepath_objstack)
 
 # save the result file
 if RESULTSAVE:
     # save the result table
-    rtsavelocation = AnalyzeTools.create_resultfilename(imagefile,
-                                                        suffix=SUFFIX_RT,
-                                                        extension=SAVEFORMAT_RT)
+    #rtsavelocation = AnalyzeTools.create_resultfilename(imagefile,
+    #                                                    suffix=SUFFIX_RT,
+    #                                                    extension=SAVEFORMAT_RT)
+    # saving the result table
+    rtsavelocation = basename + SUFFIX_RT + '.' + SAVEFORMAT_RT
     results.saveAs(rtsavelocation)
     log.info('Save Results to : ' + rtsavelocation)
 
