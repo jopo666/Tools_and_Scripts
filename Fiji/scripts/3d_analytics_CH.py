@@ -102,6 +102,10 @@ def run(imagefile):
         imps = ChannelSplitter.split(imp)
         imp = imps[CHINDEX-1]
 
+    # convert to 8bit grayscale
+    ic = ImageConverter(imp)
+    ic.convertToGray8()
+
     if FILL_HOLES:
         # 3D fill holes	
         log.info('3D Fill Holes ...')

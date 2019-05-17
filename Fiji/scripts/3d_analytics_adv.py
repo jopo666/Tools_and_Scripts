@@ -1,6 +1,9 @@
 # @File(label = "Image File", persist=True) FILENAME
 # @Boolean(label = "Extract Channel", value=True, persist=True) EXTRACT_CHANNEL
 # @Integer(label = "Select Channel", value=1, persist=True) CHANNEL2ANAlYSE
+# @Boolean(label = "Correct Background", value=False, persist=True) CORRECT_BACKGROUND
+# @Integer(label = "Rolling Ball - Disk Radius", value=30) RB_RADIUS
+# @Boolean(label = "Light Background", value=False, persist=True) LIGHTBACKGROUND
 # @String(label = "Select RankFilter", choices={"NONE", "MEDIAN", "MIN", "MAX", "MEAN", "VARIANCE", "OPEN", "DESPECKLE"}, style="listBox", value="NONE", persist=True) RANKFILTER
 # @Float(label = "Filter Radius", value=5.0, persist=False) RADIUS
 # @String(label = "Select Threshold", choices={"NONE", "Otsu", "Triangle", "IJDefault", "Huang", "MaxEntropy", "Mean", "Shanbhag", "Yen", "Li"}, style="listBox", value="NONE", persist=True) THRESHOLD
@@ -17,6 +20,9 @@
 # @OUTPUT String FILENAME
 # @OUTPUT Boolean EXTRACT_CHANNEL
 # @OUTPUT Integer CHANNEL2ANAlYSE
+# @OUTPUT Boolean CORRECT_BACKGROUND
+# @OUTPUT Integer RB_RADIUS
+# @OUTPUT Boolean LIGHTBACKGROUND
 # @OUTPUT String RANKFILTER
 # @OUTPUT float RADIUS
 # @OUTPUT String THRESHOLD
@@ -38,8 +44,8 @@
 """
 File: 3d_analytics_adv.py
 Author: Sebastian Rhode
-Date: 2019_05_10
-Version: 0.1
+Date: 2019_05_17
+Version: 0.2
 """
 
 # append path
@@ -112,9 +118,23 @@ def run(imagefile):
     if EXTRACT_CHANNEL:
         # get the correct channel
         if MetaInfo['SizeC'] > 1:
-            log.info('Extract Channel  : ' + str(MetaInfo['ChannelCount']))
+            log.info('Extract Channel  : ' + str(CHINDEX))
             imps = ChannelSplitter.split(imp)
             imp = imps[CHINDEX-1]
+
+    # correct background
+    if CORRECT_BACKGROUND:
+
+        log.info('Removing Background using Rolling Ball ...')
+        imp = FilterTools.apply_rollingball(imp,
+                                            radius=RB_RADIUS,
+                                            createBackground=CREATEBACKGROUND,
+                                            lightBackground=LIGHTBACKGROUND,
+                                            useParaboloid=USEPARABOLOID,
+                                            doPresmooth=DOPRESMOOTH,
+                                            correctCorners=CORRECTCORNERS)
+        #imp_b = imp.duplicate()
+        #imp_b.show("Rolling Ball")
 
     if RANKFILTER != 'NONE':
         # apply filter
@@ -122,14 +142,19 @@ def run(imagefile):
         imp = FilterTools.apply_filter(imp,
                                        radius=RADIUS,
                                        filtertype=RANKFILTER)
+        #imp_f = imp.duplicate()
+        #imp_f.show("Filter")
+                                       
     if THRESHOLD != 'NONE':
         # apply threshold
         log.info('Apply Threshold   : ' + THRESHOLD)
         log.info('Correction Factor : ' + str(CORRFACTOR))
-        imp = ThresholdTools.apply_threshold(imp,
-                                             method=THRESHOLD,
-                                             background_threshold='black',
-                                             corrf=CORRFACTOR)
+        imp = ThresholdTools.apply_threshold_stack(imp,
+                                                   method=THRESHOLD,
+                                                   background_threshold='black',
+                                                   corrf=CORRFACTOR)
+        imp_t = imp.duplicate()
+        imp_t.show("Threshold")
                                              
     # comvert to 8bit grayscale
     ic = ImageConverter(imp)
@@ -226,17 +251,40 @@ LABEL_BITDEPTH = 16
 LABEL_CONNECT = Integer.valueOf(LABEL_CONNECT)
 EXB = 1
 
+# parameters for Rolling Ball
+CREATEBACKGROUND = False
+CORRECTCORNERS = True
+USEPARABOLOID = True
+DOPRESMOOTH = True
+#LIGHTBACKGROUND = False
+
 # get the FILENAME as string
 imagefile = FILENAME.toString()
 
 log.info('Starting pipeline ...')
-log.info('Image Filename        : ' + imagefile)
-log.info('Channel to Analyse    : ' + str(CHINDEX))
-log.info('Label Connectivity    : ' + str(LABEL_CONNECT))
-log.info('Label Output BitDepth : ' + str(LABEL_BITDEPTH))
-log.info('Colorize Labels       : ' + str(LABEL_COLORIZE))
-log.info('Minimun Voxel Size    : ' + str(MINVOXSIZE))
-log.info('Headless Mode         : ' + str(HEADLESS))
+log.info('Image Filename         : ' + imagefile)
+log.info('Channel to Analyse     : ' + str(CHINDEX))
+log.info('-----------------------------------------')
+log.info('Correct Background     : ' + str(CORRECT_BACKGROUND))
+log.info('Rolling Ball Radius    : ' + str(RB_RADIUS))
+log.info('Light Background       : ' + str(LIGHTBACKGROUND))
+log.info('Use paraboloid         : ' + str(USEPARABOLOID))
+log.info('Doing PreSmooth        : ' + str(DOPRESMOOTH))
+log.info('Correct Corners        : ' + str(CORRECTCORNERS))
+log.info('-----------------------------------------')
+log.info('Filter Type            : ' + RANKFILTER)
+log.info('Filter Radius          : ' + str(RADIUS))
+log.info('-----------------------------------------')
+log.info('Threshold Method       : ' + THRESHOLD)
+# log.info('Threshold Background  : ' + THRESHOLD_BGRD)
+log.info('Threshold Corr-Factor  : ' + str(CORRFACTOR))
+log.info('-----------------------------------------')
+log.info('Label Connectivity     : ' + str(LABEL_CONNECT))
+#log.info('Label Output BitDepth  : ' + str(LABEL_BITDEPTH))
+log.info('Colorize Labels        : ' + str(LABEL_COLORIZE))
+log.info('Minimum Voxel Size     : ' + str(MINVOXSIZE))
+log.info('-----------------------------------------')
+log.info('Save Format used       : ' + SAVEFORMAT)
 log.info('------------  START IMAGE ANALYSIS ------------')
 
 # run image analysis pipeline

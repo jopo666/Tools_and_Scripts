@@ -463,16 +463,17 @@ class ThresholdTools:
 
     @staticmethod
     def apply_threshold(imp, method='Otsu',
-                        background_threshold='black',
+                        background_threshold='dark',
+                        stack=False,
                         corrf=1.0):
 
-        # log.info('Applying Triangle Threshold ...')
         # Create Thresholder instance
-        th = Thresholder()
+        #th = Thresholder()
 
         # get the stacks
         stack, nslices = ImageTools.getImageStack(imp)
         lowth_corr_values = []
+
 
         for index in range(1, nslices + 1):
             ip = stack.getProcessor(index)
@@ -500,12 +501,42 @@ class ThresholdTools:
 
             # apply correction factor
             lowth_corr = int(round(lowthresh * corrf, 0))
-            # IJ.log(str(lowth_corr)
-            # log.info('Threshold: ' + str(lowthresh) + ' Corrected: ' + str(lowth_corr) + ' Frame: ' + str(index))
             ip.threshold(lowth_corr)
+            print(lowth_corr)
             lowth_corr_values.append(lowth_corr)
 
         return imp
+
+        
+    @staticmethod
+    def apply_threshold_stack(imp, method='Otsu',
+                                   background_threshold='dark',
+                                   stack=True,
+                                   corrf=1.0):
+
+        if stack:
+            stack_option = 'stack'
+        if not stack:
+            stack_option = ''
+        
+        th_cmd = method + ' ' + background_threshold + ' ' + stack_option
+        
+        IJ.setAutoThreshold(imp, th_cmd)
+        ip = imp.getProcessor()
+        low = ip.getMinThreshold()
+        high = ip.getMaxThreshold()
+        # apply correction factor
+        low_corr = int(round(low * corrf, 0))
+        high_corr = int(round(high * corrf, 0))
+        print('lower threshold : ' + str(low_corr))
+        print('upper threshold : ' + str(high_corr))
+
+        imp.getProcessor().threshold(high_corr)
+
+        return imp
+    
+    
+    
 
 
 class AnalyzeTools:
