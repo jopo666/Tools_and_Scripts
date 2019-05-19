@@ -3,7 +3,8 @@
 """
 File: fijipytoools.py
 Author: Sebastian Rhode
-Date: 2019_05_09
+Version: 0.7
+Date: 2019_05_19
 """
 
 import os
@@ -11,6 +12,8 @@ import json
 from java.lang import Double
 from ij import IJ, ImagePlus, ImageStack, Prefs
 from ij.process import ImageProcessor, ImageConverter
+from ij.process import StackStatistics
+from ij.process import AutoThresholder
 from ij.plugin import Thresholder, Duplicator
 from ij.plugin.filter import GaussianBlur, RankFilters
 from ij.plugin.filter import BackgroundSubtracter, Binary
@@ -462,81 +465,89 @@ class ImageTools:
 class ThresholdTools:
 
     @staticmethod
-    def apply_threshold(imp, method='Otsu',
-                        background_threshold='dark',
-                        stack=False,
-                        corrf=1.0):
+    def apply_autothreshold(hist, method='Otsu'):
+        
+        if method == 'Otsu':
+            lowthresh = Auto_Threshold.Otsu(hist)
+        if method == 'Triangle':
+            lowthresh = Auto_Threshold.Triangle(hist)
+        if method == 'IJDefault':
+            lowthresh = Auto_Threshold.IJDefault(hist)
+        if method == 'Huang':
+            lowthresh = Auto_Threshold.Huang(hist)
+        if method == 'MaxEntropy':
+            lowthresh = Auto_Threshold.MaxEntropy(hist)
+        if method == 'Mean':
+            lowthresh = Auto_Threshold.Mean(hist)
+        if method == 'Shanbhag':
+            lowthresh = Auto_Threshold.Shanbhag(hist)
+        if method == 'Yen':
+            lowthresh = Auto_Threshold.Yen(hist)
+        if method == 'Li':
+            lowthresh = Auto_Threshold.Li(hist)
 
-        # Create Thresholder instance
-        #th = Thresholder()
+        return lowthresh
 
+
+    @staticmethod
+    # helper function to appy threshold to whole stack
+    # using one corrected value for the stack
+    def apply_threshold_stack_corr(imp, lowth_corr, method='Otsu'):
         # get the stacks
         stack, nslices = ImageTools.getImageStack(imp)
-        lowth_corr_values = []
-
 
         for index in range(1, nslices + 1):
             ip = stack.getProcessor(index)
             # get the histogramm
             hist = ip.getHistogram()
-
-            if method == 'Otsu':
-                lowthresh = Auto_Threshold.Otsu(hist)
-            if method == 'Triangle':
-                lowthresh = Auto_Threshold.Triangle(hist)
-            if method == 'IJDefault':
-                lowthresh = Auto_Threshold.IJDefault(hist)
-            if method == 'Huang':
-                lowthresh = Auto_Threshold.Huang(hist)
-            if method == 'MaxEntropy':
-                lowthresh = Auto_Threshold.MaxEntropy(hist)
-            if method == 'Mean':
-                lowthresh = Auto_Threshold.Mean(hist)
-            if method == 'Shanbhag':
-                lowthresh = Auto_Threshold.Shanbhag(hist)
-            if method == 'Yen':
-                lowthresh = Auto_Threshold.Yen(hist)
-            if method == 'Li':
-                lowthresh = Auto_Threshold.Li(hist)
-
-            # apply correction factor
-            lowth_corr = int(round(lowthresh * corrf, 0))
+            lowth = ThresholdTools.apply_autothreshold(hist, method=method)
             ip.threshold(lowth_corr)
-            print(lowth_corr)
-            lowth_corr_values.append(lowth_corr)
 
         return imp
 
-        
     @staticmethod
-    def apply_threshold_stack(imp, method='Otsu',
-                                   background_threshold='dark',
-                                   stack=True,
-                                   corrf=1.0):
+    # apply threshold either to whole stack or slice-by-slice
+    def apply_threshold(imp, method='Otsu',
+                        background_threshold='dark',
+                        stackopt=False,
+                        corrf=1.0):
 
-        if stack:
-            stack_option = 'stack'
-        if not stack:
-            stack_option = ''
-        
-        th_cmd = method + ' ' + background_threshold + ' ' + stack_option
-        
-        IJ.setAutoThreshold(imp, th_cmd)
-        ip = imp.getProcessor()
-        low = ip.getMinThreshold()
-        high = ip.getMaxThreshold()
-        # apply correction factor
-        low_corr = int(round(low * corrf, 0))
-        high_corr = int(round(high * corrf, 0))
-        print('lower threshold : ' + str(low_corr))
-        print('upper threshold : ' + str(high_corr))
+        # one threshold value for the whole stack with correction
+        if stackopt:
 
-        imp.getProcessor().threshold(high_corr)
+            # create argument string for the IJ.setAutoThreshold
+            thcmd = method + ' ' + background_threshold + ' stack'
+            # set threshold and get the lower threshold value
+            IJ.setAutoThreshold(imp, thcmd)
+            ip = imp.getProcessor()
+            hist = ip.getHistogram()
+            lowth = ip.getMinThreshold()
+            lowth_corr = int(round(lowth * corrf, 0))
+            print('Low Threshold      : ' +str(lowth))
+            print('Low Threshold Corr : ' +str(lowth_corr))
+
+            # process stack with corrected threshold value
+            if corrf <> 1.0:
+                print('Using corrected threshold value.')
+                imp = ThresholdTools.apply_threshold_stack_corr(imp, lowth_corr, method=method)
+        
+        # threshold slice-by-slice with correction
+        if not stackopt:
+	
+            # get the stack
+            stack, nslices = ImageTools.getImageStack(imp)
+            print('Thresholding slice-by-slice')
+            
+            for index in range(1, nslices + 1):
+                ip = stack.getProcessor(index)
+                # get the histogramm
+                hist = ip.getHistogram()
+                # get the threshold value
+                lowth = ThresholdTools.apply_autothreshold(hist, method=method)
+                lowth_corr = int(round(lowth * corrf, 0))
+                ip.threshold(lowth_corr)
 
         return imp
-    
-    
-    
 
 
 class AnalyzeTools:
@@ -607,7 +618,6 @@ class AnalyzeTools:
         rtfilename = os.path.splitext(filename)[0] + suffix + '.' + extension
 
         return rtfilename
-
 
 class RoiTools:
 
