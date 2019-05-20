@@ -523,17 +523,14 @@ class ThresholdTools:
             hist = ip.getHistogram()
             lowth = ip.getMinThreshold()
             lowth_corr = int(round(lowth * corrf, 0))
-            print('Low Threshold      : ' +str(lowth))
-            print('Low Threshold Corr : ' +str(lowth_corr))
-
+            
             # process stack with corrected threshold value
-            if corrf <> 1.0:
-                print('Using corrected threshold value.')
-                imp = ThresholdTools.apply_threshold_stack_corr(imp, lowth_corr, method=method)
-        
+            imp = ThresholdTools.apply_threshold_stack_corr(imp, lowth_corr,
+                                                            method=method)
+
         # threshold slice-by-slice with correction
         if not stackopt:
-	
+
             # get the stack
             stack, nslices = ImageTools.getImageStack(imp)
             print('Thresholding slice-by-slice')
