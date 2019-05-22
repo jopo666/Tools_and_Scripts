@@ -158,7 +158,7 @@ class ImportTools:
         imps = BF.openImagePlus(options)
 
         # read image data using the specified pyramid level
-        imp, slices, width, height, pylevel = ImageTools.getImageSeries(imps, readpylevel)
+        imp, slices, width, height, pylevel = ImageTools.getImageSeries(imps, series=readpylevel)
 
         metainfo['Output Slices'] = slices
         metainfo['Output SizeX'] = width
@@ -186,7 +186,7 @@ class ImportTools:
             imps = BF.openImagePlus(imagefile)
 
             # read image data using the specified pyramid level
-            imp, slices, width, height, pylevel = ImageTools.getImageSeries(imps, readpylevel)
+            imp, slices, width, height, pylevel = ImageTools.getImageSeries(imps, series=readpylevel)
 
             metainfo['Output Slices'] = slices
             metainfo['Output SizeX'] = width
