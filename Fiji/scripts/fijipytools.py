@@ -19,6 +19,7 @@ from ij.plugin.filter import GaussianBlur, RankFilters
 from ij.plugin.filter import BackgroundSubtracter, Binary
 from ij.plugin.filter import ParticleAnalyzer as PA
 from ij.plugin.frame import RoiManager
+from ij.plugin import ChannelSplitter
 from ij.io import FileSaver
 from ij.gui import Roi
 from ij.gui import Overlay
@@ -533,6 +534,7 @@ class ThresholdTools:
 
             # get the stack
             stack, nslices = ImageTools.getImageStack(imp)
+            print('Slices: ' + str(nslices))
             print('Thresholding slice-by-slice')
             
             for index in range(1, nslices + 1):
@@ -739,6 +741,17 @@ class MiscTools:
         imp.setCalibration(newCal)
 
         return imp
+
+    @staticmethod
+    def splitchannel(imp, chindex):
+
+        # get the correct channel
+        if imp.getNChannels > 1:
+            imps = ChannelSplitter.split(imp)
+            imp = imps[chindex-1]
+        
+        return imp
+
 
 
 class JSONTools:
