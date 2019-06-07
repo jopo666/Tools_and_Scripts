@@ -493,16 +493,42 @@ class ThresholdTools:
     @staticmethod
     # helper function to appy threshold to whole stack
     # using one corrected value for the stack
-    def apply_threshold_stack_corr(imp, lowth_corr, method='Otsu'):
+    def apply_threshold_stack_corr_old(imp, lowth_corr, method='Otsu'):
         # get the stacks
         stack, nslices = ImageTools.getImageStack(imp)
 
         for index in range(1, nslices + 1):
             ip = stack.getProcessor(index)
             # get the histogramm
-            hist = ip.getHistogram()
-            lowth = ThresholdTools.apply_autothreshold(hist, method=method)
+            #hist = ip.getHistogram()
+            #lowth = ThresholdTools.apply_autothreshold(hist, method=method)
+            print('Apply corrected TH')
             ip.threshold(lowth_corr)
+            # convert to 8bit without rescaling
+            #ip = ip.convertToByte(False)
+            imp.setProcessor(ip)
+
+        return imp
+        
+    @staticmethod
+    # helper function to appy threshold to whole stack
+    # using one corrected value for the stack
+    def apply_threshold_stack_corr(imp, lowth_corr, method='Otsu'):
+        # get the stacks
+        stack = imp.getStack()
+        nslices = stack.getSize()
+
+        for index in range(1, nslices + 1):
+            ip = stack.getProcessor(index)
+            print('Apply corrected TH: ' + str(lowth_corr))
+            ip.threshold(lowth_corr)  
+            #imp.getStack().getProcessor(index).threshold(lowth_corr)    
+            # convert to 8bit without rescaling
+            #ip = ip.convertToByte(False)
+            #imp.setProcessor(ip)
+
+        ImageConverter.setDoScaling(False)
+        ImageConverter(imp).convertToGray8()     
 
         return imp
 
@@ -521,7 +547,7 @@ class ThresholdTools:
             # set threshold and get the lower threshold value
             IJ.setAutoThreshold(imp, thcmd)
             ip = imp.getProcessor()
-            hist = ip.getHistogram()
+            #hist = ip.getHistogram()
             lowth = ip.getMinThreshold()
             lowth_corr = int(round(lowth * corrf, 0))
             
@@ -545,6 +571,12 @@ class ThresholdTools:
                 lowth = ThresholdTools.apply_autothreshold(hist, method=method)
                 lowth_corr = int(round(lowth * corrf, 0))
                 ip.threshold(lowth_corr)
+                # convert to 8bit without rescaling
+                #ip = ip.convertToByte(False)
+                #imp.setProcessor(ip)
+
+            ImageConverter.setDoScaling(False)
+            ImageConverter(imp).convertToGray8()
 
         return imp
 
@@ -598,15 +630,33 @@ class AnalyzeTools:
         results = ResultsTable()
         p = PA(options, measurements, results, minsize, maxsize, mincirc, maxcirc)
         p.setHideOutputImage(True)
-        particlestack = ImageStack(imp.getWidth(), imp.getHeight())
+        particlestack = ImageStack(imp.getWidth(), imp.getHeight())   
 
+        """
         for i in range(imp.getStackSize()):
+        #for i in range(imp.getImageStackSize()):
+        #for i in range(imp.getSize()):
             imp.setSliceWithoutUpdate(i + 1)
             ip = imp.getProcessor()
             IJ.run(imp, "Convert to Mask", "")
             p.analyze(imp, ip)
             mmap = p.getOutputImage()
             particlestack.addSlice(mmap.getProcessor())
+        """
+        if imp.isStack():
+            print('Stack')
+        else:
+            print('Not a stack')
+
+        #for i in range(imp.size()):
+        for i in xrange(1, imp.getStackSize()+1):
+            #imp.setSliceWithoutUpdate(i + 1)
+            ip = imp.getProcessor()
+            #IJ.run(imp, "Convert to Mask", "")
+            p.analyze(imp, ip)
+            mmap = p.getOutputImage()
+            particlestack.addSlice(mmap.getProcessor())
+
 
         return particlestack, results
 
@@ -745,8 +795,11 @@ class MiscTools:
     @staticmethod
     def splitchannel(imp, chindex):
 
-        # get the correct channel
-        if imp.getNChannels > 1:
+        nch = imp.getNChannels()
+        print('Number of Channels: ' + str(nch))
+
+        # extract the channel if there are more than one
+        if nch > 1:
             imps = ChannelSplitter.split(imp)
             imp = imps[chindex-1]
         

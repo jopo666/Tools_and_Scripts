@@ -27,13 +27,13 @@ from fiji.threshold import Auto_Threshold
 stackopt=False
 method='Otsu'
 background_threshold = 'dark'
-imagefile = "/datadisk1/tuxedo/Github/Tools_and_Scripts/Fiji/scripts/3d_nuclei_image_holes_T.ome.tiff"
+imagefile = "c:\Users\m1srh\Downloads\Osteosarcoma_01.ome.tiff"
 corrf = 1.0
 
 if stackopt:
 	thcmd = method + ' ' + background_threshold + ' stack'
 if not stackopt:
-	thcmd = method + ' ' + background_threshold + ' stack'
+	thcmd = method + ' ' + background_threshold
 
 # open image stack
 imp, MetaInfo = ImportTools.openfile(imagefile)

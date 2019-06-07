@@ -37,12 +37,13 @@ from inra.ijpb.data.image import Images3D
 
 ############################################################################
 
-stackopt=False
+stackopt=True
 method='Otsu'
 background_threshold = 'dark'
 #imagefile = r"/datadisk1/tuxedo/Github/Tools_and_Scripts/Fiji/scripts/3d_nuclei_image_holes_T.ome.tiff"
 #imagefile = r"/datadisk1/tuxedo/Github/Tools_and_Scripts/Fiji/scripts/3d_nuclei_image_holes.ome.tiff"
 imagefile = r"/datadisk1/tuxedo/Github/Tools_and_Scripts/Fiji/scripts/Osteosarcoma_01.ome.tiff"
+imagefile = r'"C:\Temp\input\Osteosarcoma_01.ome.tiff"
 corrf = 1.0
 
 if stackopt:
