@@ -436,6 +436,36 @@ class FilterTools:
 
         return imp
 
+
+class WaterShedTools:
+
+
+    @staticmethod
+    def run_watershed(imp,
+                      mj_normalize=True,
+                      mj_dynamic=1,
+                      mj_connectivity=6):
+
+        numZ = imp.getNSlices()
+
+        if numZ == 1:
+            # run watershed on 2D image
+            imp = WaterShedTools.edm_watershed(imp)
+
+        if numZ > 1:
+
+            # for 3D Stacks only connectivity 6 or 26 is allowed
+            if mj_connectivity != 6 or mj_connectivity != 26:
+                mj_connectivity = 6
+                print('Only 6 or 26 connectivity for 3D stacks is allowed. Using 6.')
+
+            imp = WaterShedTools.mj_watershed(imp,
+                                              normalize=mj_normalize,
+                                              dynamic=mj_dynamic,
+                                              connectivity=mj_connectivity)
+
+        return imp
+
     @staticmethod
     def edm_watershed(imp):
         
@@ -450,6 +480,24 @@ class FilterTools:
             edm = EDM()
             edm.setup("watershed", None)
             edm.run(ip)
+
+        return imp
+
+    @staticmethod
+    def mj_watershed(imp,
+                     normalize=True,
+                     dynamic=1,
+                     connectivity=6):
+
+        # run watershed on stack
+        weights = ChamferWeights3D.BORGEFORS.getFloatWeights()
+        # calc distance map and invert
+        dist = BinaryImages.distanceMap(imp.getStack(), weights, normalize)
+        Images3D.invert(dist)
+        basins = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp.getStack(), dynamic, connectivity, False)  
+        imp = ImagePlus("basins", basins)
+        ip = imp.getProcessor()
+        ip.setThreshold(1, 255, ImageProcessor.NO_LUT_UPDATE)
 
         return imp
 
@@ -659,6 +707,7 @@ class AnalyzeTools:
         rtfilename = os.path.splitext(filename)[0] + suffix + '.' + extension
 
         return rtfilename
+
 
 class RoiTools:
 
