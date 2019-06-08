@@ -455,7 +455,7 @@ class WaterShedTools:
         if numZ > 1:
 
             # for 3D Stacks only connectivity 6 or 26 is allowed
-            if mj_connectivity != 6 or mj_connectivity != 26:
+            if mj_connectivity not in [6, 26]:
                 mj_connectivity = 6
                 print('Only 6 or 26 connectivity for 3D stacks is allowed. Using 6.')
 
