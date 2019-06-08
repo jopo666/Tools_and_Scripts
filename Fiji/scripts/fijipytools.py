@@ -3,8 +3,8 @@
 """
 File: fijipytoools.py
 Author: Sebastian Rhode
-Version: 0.7
-Date: 2019_05_19
+Version: 0.9
+Date: 2019_06_08
 """
 
 import os
@@ -18,6 +18,7 @@ from ij.plugin import Thresholder, Duplicator
 from ij.plugin.filter import GaussianBlur, RankFilters
 from ij.plugin.filter import BackgroundSubtracter, Binary
 from ij.plugin.filter import ParticleAnalyzer as PA
+from ij.plugin.filter import EDM
 from ij.plugin.frame import RoiManager
 from ij.plugin import ChannelSplitter
 from ij.io import FileSaver
@@ -38,6 +39,23 @@ from loci.formats import MetadataTools
 from loci.formats.in import ZeissCZIReader
 from loci.formats.in import DynamicMetadataOptions
 from ome.units import UNITS
+
+# MorphoLibJ imports
+from inra.ijpb.binary import BinaryImages, ChamferWeights3D, ChamferWeights
+from inra.ijpb.morphology import MinimaAndMaxima3D, Morphology, Strel3D
+from inra.ijpb.watershed import Watershed
+from inra.ijpb.label import LabelImages
+from inra.ijpb.plugins import ParticleAnalysis3DPlugin
+from inra.ijpb.plugins import BoundingBox3DPlugin
+from inra.ijpb.plugins import ExtendBordersPlugin
+from inra.ijpb.data.border import BorderManager3D, ReplicatedBorder3D
+from inra.ijpb.util.ColorMaps import CommonLabelMaps
+from inra.ijpb.util import CommonColors
+from inra.ijpb.plugins import DistanceTransformWatershed3D, FillHolesPlugin
+from inra.ijpb.data.image import Images3D
+from inra.ijpb.watershed import ExtendedMinimaWatershed
+from inra.ijpb.morphology import Reconstruction
+from inra.ijpb.morphology import Reconstruction3D
 
 
 class ImportTools:
@@ -418,6 +436,23 @@ class FilterTools:
 
         return imp
 
+    @staticmethod
+    def edm_watershed(imp):
+        
+        # get the image processor
+        ip = imp.getProcessor()
+
+        if ip.isBinary is False:
+            # convert to 8bit without rescaling
+            ImageConverter.setDoScaling(False)
+            ImageConverter(imp).convertToGray8()
+        else:
+            edm = EDM()
+            edm.setup("watershed", None)
+            edm.run(ip)
+
+        return imp
+
 
 class ImageTools:
 
@@ -489,29 +524,9 @@ class ThresholdTools:
 
         return lowthresh
 
-
-    @staticmethod
-    # helper function to appy threshold to whole stack
-    # using one corrected value for the stack
-    def apply_threshold_stack_corr_old(imp, lowth_corr, method='Otsu'):
-        # get the stacks
-        stack, nslices = ImageTools.getImageStack(imp)
-
-        for index in range(1, nslices + 1):
-            ip = stack.getProcessor(index)
-            # get the histogramm
-            #hist = ip.getHistogram()
-            #lowth = ThresholdTools.apply_autothreshold(hist, method=method)
-            print('Apply corrected TH')
-            ip.threshold(lowth_corr)
-            # convert to 8bit without rescaling
-            #ip = ip.convertToByte(False)
-            imp.setProcessor(ip)
-
-        return imp
         
     @staticmethod
-    # helper function to appy threshold to whole stack
+    # helper function to apply threshold to whole stack
     # using one corrected value for the stack
     def apply_threshold_stack_corr(imp, lowth_corr, method='Otsu'):
         # get the stacks
@@ -521,14 +536,11 @@ class ThresholdTools:
         for index in range(1, nslices + 1):
             ip = stack.getProcessor(index)
             print('Apply corrected TH: ' + str(lowth_corr))
-            ip.threshold(lowth_corr)  
-            #imp.getStack().getProcessor(index).threshold(lowth_corr)    
-            # convert to 8bit without rescaling
-            #ip = ip.convertToByte(False)
-            #imp.setProcessor(ip)
+            ip.threshold(lowth_corr)
 
+        # convert to 8bit without rescaling
         ImageConverter.setDoScaling(False)
-        ImageConverter(imp).convertToGray8()     
+        ImageConverter(imp).convertToGray8()   
 
         return imp
 
@@ -547,7 +559,7 @@ class ThresholdTools:
             # set threshold and get the lower threshold value
             IJ.setAutoThreshold(imp, thcmd)
             ip = imp.getProcessor()
-            #hist = ip.getHistogram()
+            # get the threshold value and correct it
             lowth = ip.getMinThreshold()
             lowth_corr = int(round(lowth * corrf, 0))
             
@@ -571,12 +583,10 @@ class ThresholdTools:
                 lowth = ThresholdTools.apply_autothreshold(hist, method=method)
                 lowth_corr = int(round(lowth * corrf, 0))
                 ip.threshold(lowth_corr)
-                # convert to 8bit without rescaling
-                #ip = ip.convertToByte(False)
-                #imp.setProcessor(ip)
 
+            # convert to 8bit without rescaling
             ImageConverter.setDoScaling(False)
-            ImageConverter(imp).convertToGray8()
+            ImageConverter(imp).convertToGray8() 
 
         return imp
 
@@ -631,32 +641,14 @@ class AnalyzeTools:
         p = PA(options, measurements, results, minsize, maxsize, mincirc, maxcirc)
         p.setHideOutputImage(True)
         particlestack = ImageStack(imp.getWidth(), imp.getHeight())   
-
-        """
+        
         for i in range(imp.getStackSize()):
-        #for i in range(imp.getImageStackSize()):
-        #for i in range(imp.getSize()):
             imp.setSliceWithoutUpdate(i + 1)
-            ip = imp.getProcessor()
-            IJ.run(imp, "Convert to Mask", "")
-            p.analyze(imp, ip)
-            mmap = p.getOutputImage()
-            particlestack.addSlice(mmap.getProcessor())
-        """
-        if imp.isStack():
-            print('Stack')
-        else:
-            print('Not a stack')
-
-        #for i in range(imp.size()):
-        for i in xrange(1, imp.getStackSize()+1):
-            #imp.setSliceWithoutUpdate(i + 1)
             ip = imp.getProcessor()
             #IJ.run(imp, "Convert to Mask", "")
             p.analyze(imp, ip)
             mmap = p.getOutputImage()
             particlestack.addSlice(mmap.getProcessor())
-
 
         return particlestack, results
 
