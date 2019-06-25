@@ -599,7 +599,8 @@ class ThresholdTools:
         if not stackopt:
 
             # get the stack
-            stack, nslices = ImageTools.getImageStack(imp)
+            stack = imp.getStack()  # get the stack within the ImagePlus
+            nslices = stack.getSize()  # get the number of slices
             print('Slices: ' + str(nslices))
             print('Thresholding slice-by-slice')
             
