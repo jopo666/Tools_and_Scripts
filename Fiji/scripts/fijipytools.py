@@ -3,8 +3,8 @@
 """
 File: fijipytoools.py
 Author: Sebastian Rhode
-Version: 0.9
-Date: 2019_06_11
+Version: 1.0
+Date: 2019_06_28
 """
 
 import os
@@ -422,16 +422,41 @@ class FilterTools:
         filterdict['VARIANCE'] = RankFilters.VARIANCE
         filterdict['OPEN'] = RankFilters.OPEN
         filterdict['DESPECKLE'] = RankFilters.DESPECKLE
+        filterdict['Mean'] = RankFilters.MEAN
+        filterdict['Min'] = RankFilters.MIN
+        filterdict['Max'] = RankFilters.MAX
+        filterdict['Median'] = RankFilters.MEDIAN
+        filterdict['Variance'] = RankFilters.VARIANCE
+        filterdict['Open'] = RankFilters.OPEN
+        filterdict['Despeckle'] = RankFilters.DESPECKLE
 
         stack = imp.getStack()  # get the stack within the ImagePlus
         nslices = stack.getSize()  # get the number of slices
-        
+
         for index in range(1, nslices + 1):
             ip = stack.getProcessor(index)
 
             # apply filter based on filtertype
             # if filtertype == 'MEDIAN':
             filter.rank(ip, radius, filterdict[filtertype])
+
+        return imp
+
+
+class BinaryTools:
+
+    @staticmethod
+    def fill_holes(imp):
+
+        numZ = imp.getNSlices()
+
+        if numZ == 1:
+            # 2D fill holes
+            Reconstruction.fillHoles(imp.getProcessor())
+
+        if numZ > 1:
+            # 3D fill holes
+            imp = Reconstruction3D.fillHoles(imp.getImageStack())
 
         return imp
 
