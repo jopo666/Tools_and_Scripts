@@ -125,7 +125,7 @@ class ImportTools:
                                                 showomexml=showomexml,
                                                 attach=attach,
                                                 autoscale=autoscale)
-        
+
         # if image file is not Carl Zeiss Image - CZI
         if metainfo['Extension'] != '.czi':
 
@@ -238,7 +238,7 @@ class ImportTools:
 
         # Set the preferences in the ImageJ plugin
         # Note although these preferences are applied, they are not refreshed in the UI
-        Prefs.set("bioformats.zeissczi.allow.autostitch",  str(stitchtiles).lower())
+        Prefs.set("bioformats.zeissczi.allow.autostitch", str(stitchtiles).lower())
         Prefs.set("bioformats.zeissczi.include.attachments", str(attach).lower())
 
         # metainfo = {}
@@ -314,7 +314,7 @@ class ExportTools:
     def bfexporter(imp, savepath, useLOCI=True):
 
         if useLOCI:
-            
+
             paramstring = "outfile=" + savepath + " " + "windowless=true compression=Uncompressed saveROI=false"
             plugin = LociExporter()
             plugin.arg = paramstring
@@ -323,26 +323,24 @@ class ExportTools:
 
         # save as OME-TIFF using BioFormats library using the IJ.run method
         if not useLOCI:
-            
+
             # 2019-04-25: This does not seem to work in headless anymore
             paramstring = "save=[" + savepath + "] compression=Uncompressed"
             IJ.run(imp, "Bio-Formats Exporter", paramstring)
 
         return paramstring
 
-
     @staticmethod
     def savedata(imp, savepath, extension='ome.tiff', replace=False):
 
         # general function for saving image data in different formats
-        
+
         # check if file already exists and delete if replace is true
         if os.path.exists(savepath):
             if replace:
                 os.remove(savepath)
             if not replace:
                 return None
-
 
         # general safety check
         if not extension:
@@ -439,7 +437,6 @@ class FilterTools:
 
 class WaterShedTools:
 
-
     @staticmethod
     def run_watershed(imp,
                       mj_normalize=True,
@@ -468,7 +465,7 @@ class WaterShedTools:
 
     @staticmethod
     def edm_watershed(imp):
-        
+
         # get the image processor
         ip = imp.getProcessor()
 
@@ -494,7 +491,7 @@ class WaterShedTools:
         # calc distance map and invert
         dist = BinaryImages.distanceMap(imp.getStack(), weights, normalize)
         Images3D.invert(dist)
-        basins = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp.getStack(), dynamic, connectivity, False)  
+        basins = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp.getStack(), dynamic, connectivity, False)
         imp = ImagePlus("basins", basins)
         ip = imp.getProcessor()
         ip.setThreshold(1, 255, ImageProcessor.NO_LUT_UPDATE)
@@ -550,7 +547,7 @@ class ThresholdTools:
 
     @staticmethod
     def apply_autothreshold(hist, method='Otsu'):
-        
+
         if method == 'Otsu':
             lowthresh = Auto_Threshold.Otsu(hist)
         if method == 'Triangle':
@@ -572,7 +569,6 @@ class ThresholdTools:
 
         return lowthresh
 
-        
     @staticmethod
     # helper function to apply threshold to whole stack
     # using one corrected value for the stack
@@ -588,7 +584,7 @@ class ThresholdTools:
 
         # convert to 8bit without rescaling
         ImageConverter.setDoScaling(False)
-        ImageConverter(imp).convertToGray8()   
+        ImageConverter(imp).convertToGray8()
 
         return imp
 
@@ -604,13 +600,15 @@ class ThresholdTools:
 
             # create argument string for the IJ.setAutoThreshold
             thcmd = method + ' ' + background_threshold + ' stack'
+
             # set threshold and get the lower threshold value
             IJ.setAutoThreshold(imp, thcmd)
             ip = imp.getProcessor()
+
             # get the threshold value and correct it
             lowth = ip.getMinThreshold()
             lowth_corr = int(round(lowth * corrf, 0))
-            
+
             # process stack with corrected threshold value
             imp = ThresholdTools.apply_threshold_stack_corr(imp, lowth_corr,
                                                             method=method)
@@ -622,11 +620,14 @@ class ThresholdTools:
             stack, nslices = ImageTools.getImageStack(imp)
             print('Slices: ' + str(nslices))
             print('Thresholding slice-by-slice')
-            
+
             for index in range(1, nslices + 1):
+
                 ip = stack.getProcessor(index)
+
                 # get the histogramm
                 hist = ip.getHistogram()
+
                 # get the threshold value
                 lowth = ThresholdTools.apply_autothreshold(hist, method=method)
                 lowth_corr = int(round(lowth * corrf, 0))
@@ -634,7 +635,7 @@ class ThresholdTools:
 
             # convert to 8bit without rescaling
             ImageConverter.setDoScaling(False)
-            ImageConverter(imp).convertToGray8() 
+            ImageConverter(imp).convertToGray8()
 
         return imp
 
@@ -688,8 +689,8 @@ class AnalyzeTools:
         results = ResultsTable()
         p = PA(options, measurements, results, minsize, maxsize, mincirc, maxcirc)
         p.setHideOutputImage(True)
-        particlestack = ImageStack(imp.getWidth(), imp.getHeight())   
-        
+        particlestack = ImageStack(imp.getWidth(), imp.getHeight())
+
         for i in range(imp.getStackSize()):
             imp.setSliceWithoutUpdate(i + 1)
             ip = imp.getProcessor()
@@ -842,10 +843,9 @@ class MiscTools:
         # extract the channel if there are more than one
         if nch > 1:
             imps = ChannelSplitter.split(imp)
-            imp = imps[chindex-1]
-        
-        return imp
+            imp = imps[chindex - 1]
 
+        return imp
 
 
 class JSONTools:
