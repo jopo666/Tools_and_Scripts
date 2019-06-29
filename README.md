@@ -1,6 +1,6 @@
 # Tools_and_Scripts
 
-This is a collection tools and scripts related to Fiji. Use the at your own risk. Most likely this scripts still contains some bugs or things that could be implemented in a much smarter way,So feedback is appreciated.
+This is a collection tools and scripts related to Fiji. Use the at your own risk. Most likely this scripts still contains some bugs or things that could be implemented in a much smarter way. Feedback is appreciated.
 
 The structure is still a bit "messy" and will most likely change ...
 
@@ -14,16 +14,16 @@ Very brief descriptions of the functions. Most things are commented inside the s
 
 #### ImportTools
 
-* here the most import metadata will be read and stored inside a dictionary.
-* depending on the file extension the correct sunfunction to open the imagefile will be used
+* here the most import metadata will be read and stored inside a dictionary
+* depending on the file extension the correct function to open the image file will be used
   * readbf - for all kind of files
-  * readCZI - reads CZI using BioFormats with many additional options
-  * openJPG - reading JPGs usong the standard IJ opener or BioFormats
+  * readCZI - reads CZI using BioFormats with many additional options like specifying the desired pyramid level etc.
+  * openJPG - reading JPGs using the standard IJ opener or BioFormats
 
 #### ExportTools
 
 * depending on the choose file extension BioFormats or other built-in save methods will be used
-* moss common use case is obviously to save the inage data as OME-TIFF using the BioFormats exporter
+* moss common use case is obviously to save the image data as OME-TIFF using the BioFormats exporter
 
 #### FilterTools
 
@@ -38,7 +38,7 @@ Very brief descriptions of the functions. Most things are commented inside the s
 
 * checks if the image is a z-stack and calls either a 2D or 3D watershed
 * uses the built-in watershed to separate objects in 2D images
-* uses the MorphoLibJ 3D watershed to separate bianry objects in 3D
+* uses the MorphoLibJ 3D watershed to separate binary objects in 3D
 
 #### ImageTools
 
@@ -46,7 +46,7 @@ Very brief descriptions of the functions. Most things are commented inside the s
 
 #### ThresholdTools
 
-* this function allows to apply a threshold to a stack using various methods
+* this function allows to apply a threshold to a stack using various methods like *Otsu*
 * the threshold can be calculated slice-by-slice or for the whole stack
 * it is possible to apply a correction factor to the calculated threshold value
 
@@ -62,7 +62,7 @@ Very brief descriptions of the functions. Most things are commented inside the s
 
 * apply binning to an image to reduce its size
 * can detect the file extension
-* set properties and scaing for an ImagePlus
+* set or change the properties and the scaling for an ImagePlus
 * split an image into different channels
 
 #### JSONTools
