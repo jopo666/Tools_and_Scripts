@@ -14,10 +14,6 @@ Very brief descriptions of the functions. Most things are commented inside the s
 
 #### ImportTools
 
-Everything related to reading images.
-
-##### ImportTools.openfile
-
 * here the most import metadata will be read and stored inside a dictionary.
 * depending on the file extension the correct sunfunction to open the imagefile will be used
   * readbf - for all kind of files
