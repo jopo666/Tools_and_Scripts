@@ -69,3 +69,7 @@ Very brief descriptions of the functions. Most things are commented inside the s
 
 * read and write JSON files
 * is useful when writing modules for [APEER](https://www.apeer.com "APEER - Free and Open Platform for Your Processing Needs")
+* for more details please check: [APEER - Fiji Python Tutorial](https://docs.apeer.com/tutorials/fiji-python-scripting "APEER - Use Fiji Python Scripting to create your own module")
+
+
+
