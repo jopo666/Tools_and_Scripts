@@ -4,7 +4,7 @@
 File: fijipytoools.py
 Author: Sebastian Rhode
 Version: 0.9
-Date: 2019_06_08
+Date: 2019_06_11
 """
 
 import os
@@ -350,7 +350,7 @@ class ExportTools:
         if extension in ['tiff', 'tif', 'ome.tiff', 'ome.tif', 'png', 'jpeg']:
 
             fs = FileSaver(imp)
-            nslices = ImageTools.getslices(imp)
+            nslices = imp.getStack().getSize()  # get the number of slices
 
             # in case of TIFF
             if extension == ('tiff' or 'tif' or 'TIFF' or 'TIF'):
@@ -391,8 +391,8 @@ class FilterTools:
 
         # Create BackgroundSubtracter instance
         bs = BackgroundSubtracter()
-        # get the stacks
-        stack, nslices = ImageTools.getImageStack(imp)
+        stack = imp.getStack()  # get the stack within the ImagePlus
+        nslices = stack.getSize()  # get the number of slices
 
         for index in range(1, nslices + 1):
             ip = stack.getProcessor(index)
@@ -423,8 +423,9 @@ class FilterTools:
         filterdict['OPEN'] = RankFilters.OPEN
         filterdict['DESPECKLE'] = RankFilters.DESPECKLE
 
-        # get the stacks
-        stack, nslices = ImageTools.getImageStack(imp)
+        stack = imp.getStack()  # get the stack within the ImagePlus
+        nslices = stack.getSize()  # get the number of slices
+        
         for index in range(1, nslices + 1):
             ip = stack.getProcessor(index)
 
@@ -502,26 +503,6 @@ class WaterShedTools:
 class ImageTools:
 
     @staticmethod
-    def getImageStack(imp):
-
-        # get the stacks
-        try:
-            stack = imp.getStack()  # get the stack within the ImagePlus
-            nslices = stack.getSize()  # get the number of slices
-        except:
-            stack = imp.getProcessor()
-            nslices = 1
-
-        return stack, nslices
-
-    @staticmethod
-    def getslices(imp):
-
-        nslices = imp.getNSlices()
-
-        return nslices
-
-    @staticmethod
     def getImageSeries(imps, series=0):
 
         try:
@@ -579,7 +560,7 @@ class ThresholdTools:
 
         for index in range(1, nslices + 1):
             ip = stack.getProcessor(index)
-            print('Apply corrected TH: ' + str(lowth_corr))
+            #print('Apply corrected TH: ' + str(lowth_corr))
             ip.threshold(lowth_corr)
 
         # convert to 8bit without rescaling
@@ -617,7 +598,8 @@ class ThresholdTools:
         if not stackopt:
 
             # get the stack
-            stack, nslices = ImageTools.getImageStack(imp)
+            stack = imp.getStack()  # get the stack within the ImagePlus
+            nslices = stack.getSize()  # get the number of slices
             print('Slices: ' + str(nslices))
             print('Thresholding slice-by-slice')
 
