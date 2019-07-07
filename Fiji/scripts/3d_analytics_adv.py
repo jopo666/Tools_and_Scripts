@@ -37,8 +37,8 @@
 # @OUTPUT Boolean RESULTSAVE
 # @OUTPUT Boolean HEADLESS
 
-#@UIService uiService
-#@LogService log
+# @UIService uiService
+# @LogService log
 
 
 """
@@ -51,9 +51,12 @@ Version: 0.2
 # append path
 import os
 import sys
-scriptdir = os.path.join(os.getcwd(), 'Scripts')
-sys.path.append(scriptdir)
-log.info('Fiji Script Directory: ' + scriptdir)
+#scriptdir = os.path.join(os.getcwd(), 'Scripts')
+# sys.path.append(scriptdir)
+#log.info('Fiji Script Directory: ' + scriptdir)
+from sys import path
+from java.lang.System import getProperty
+path.append(getProperty('fiji.dir') + '/scripts')
 
 from fijipytools import ExportTools, FilterTools, ImageTools, ImportTools
 from fijipytools import AnalyzeTools, RoiTools, MiscTools, ThresholdTools
@@ -114,13 +117,12 @@ def run(imagefile):
     # do the processing
     log.info('Start Processing ...')
 
-
     if EXTRACT_CHANNEL:
         # get the correct channel
         if MetaInfo['SizeC'] > 1:
             log.info('Extract Channel  : ' + str(CHINDEX))
             imps = ChannelSplitter.split(imp)
-            imp = imps[CHINDEX-1]
+            imp = imps[CHINDEX - 1]
 
     # correct background
     if CORRECT_BACKGROUND:
@@ -143,31 +145,39 @@ def run(imagefile):
                                        radius=RADIUS,
                                        filtertype=RANKFILTER)
         #imp_f = imp.duplicate()
-        #imp_f.show("Filter")
-                                       
+        # imp_f.show("Filter")
+
     if THRESHOLD != 'NONE':
         # apply threshold
         log.info('Apply Threshold   : ' + THRESHOLD)
         log.info('Correction Factor : ' + str(CORRFACTOR))
+        """
         imp = ThresholdTools.apply_threshold_stack(imp,
                                                    method=THRESHOLD,
-                                                   background_threshold='black',
+                                                   background_threshold='dark',
                                                    corrf=CORRFACTOR)
+        """
+        imp = ThresholdTools.apply_threshold(imp,
+                                             method=THRESHOLD,
+                                             background_threshold='dark',
+                                             stackopt=TH_STACKOPT,
+                                             corrf=CORRFACTOR)
+
         imp_t = imp.duplicate()
         imp_t.show("Threshold")
-                                             
+
     # comvert to 8bit grayscale
-    ic = ImageConverter(imp)
-    ic.convertToGray8()
-    
+    #ic = ImageConverter(imp)
+    # ic.convertToGray8()
+
     if FILL_HOLES:
-        # 3D fill holes	
+        # 3D fill holes
         log.info('3D Fill Holes ...')
         imp = Reconstruction3D.fillHoles(imp.getImageStack())
 
     if not FILL_HOLES:
         imp = imp.getImageStack()
-    
+
     if WATERSHED:
         # run watershed on stack
         weights = ChamferWeights3D.BORGEFORS.getFloatWeights()
@@ -178,9 +188,9 @@ def run(imagefile):
         #dist = BinaryImages.distanceMap(imp.getImageStack(), weights, normalize)
         dist = BinaryImages.distanceMap(imp, weights, normalize)
         Images3D.invert(dist)
-        #imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp.getImageStack(), dynamic, connectivity, 32, False )  
-        imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp, dynamic, connectivity, 32, False )  
-    
+        #imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp.getImageStack(), dynamic, connectivity, 32, False )
+        imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp, dynamic, connectivity, 32, False)
+
     # extend borders
     log.info('Border Extension ...')
     # create BorderManager and add Zeros in all dimensions
@@ -211,7 +221,7 @@ def run(imagefile):
 
     # colorize the labels
     if LABEL_COLORIZE:
-    
+
         log.info('Colorize Lables ...')
         #maxLabel = 255
         maxLabel = len(labels)
@@ -258,6 +268,9 @@ USEPARABOLOID = True
 DOPRESMOOTH = True
 #LIGHTBACKGROUND = False
 
+# calc histogramm for threshold using whole stack
+TH_STACKOPT = True
+
 # get the FILENAME as string
 imagefile = FILENAME.toString()
 
@@ -276,7 +289,7 @@ log.info('Filter Type            : ' + RANKFILTER)
 log.info('Filter Radius          : ' + str(RADIUS))
 log.info('-----------------------------------------')
 log.info('Threshold Method       : ' + THRESHOLD)
-# log.info('Threshold Background  : ' + THRESHOLD_BGRD)
+log.info('Threshold Histo Calc   : ' + str(TH_STACKOPT))
 log.info('Threshold Corr-Factor  : ' + str(CORRFACTOR))
 log.info('-----------------------------------------')
 log.info('Label Connectivity     : ' + str(LABEL_CONNECT))
@@ -316,7 +329,7 @@ if PASAVE:
 # save the result file
 if RESULTSAVE:
     # save the result table
-    #rtsavelocation = AnalyzeTools.create_resultfilename(imagefile,
+    # rtsavelocation = AnalyzeTools.create_resultfilename(imagefile,
     #                                                    suffix=SUFFIX_RT,
     #                                                    extension=SAVEFORMAT_RT)
     # saving the result table

@@ -3,6 +3,7 @@
 # @Boolean(label = "Extract Channel", value=True, persist=True) extract_channel
 # @Integer(label = "Channel Index", value=3, persist=True) channelindex
 #@ String (visibility=MESSAGE, value="Parameters for Rolling Ball Background Correction") msg2
+# @Boolean(label = "Correct Background", value=True, persist=True) correct_background
 # @Integer(label = "Disk Radius", value=30) rb_radius
 #@ String (visibility=MESSAGE, value="Smooth Image using Filters") msg3
 # @String(label = "Method", choices={"NONE", "Median", "Min", "Max", "Mean", "Variance", "Open", "Despeckle"}, style="listBox", value="Median", persist=True) filtertype
@@ -244,7 +245,8 @@ if watershed:
                                        mj_normalize=True,
                                        mj_dynamic=1,
                                        mj_connectivity=watershed_connectivity,
-                                       force_mj=True)
+                                       force_mj=True,
+                                       is3d=MetaInfo['is3d'])
 
 pastack, results = AnalyzeTools.analyzeParticles(imp,
                                                  minsize,
