@@ -1,15 +1,20 @@
 # @File(label = "Image File", persist=True) imagefile
+#@ String (visibility=MESSAGE, value="Channel to be processed") msg1
 # @Boolean(label = "Extract Channel", value=True, persist=True) extract_channel
-# @Integer(label = "Select Channel", value=3, persist=True) channelindex
-# @Boolean(label = "Correct Background", value=True, persist=True) correct_background
-# @Integer(label = "Rolling Ball - Disk Radius", value=30) rb_radius
-# @String(label = "Select RankFilter", choices={"NONE", "Median", "Min", "Max", "Mean", "Variance", "Open", "Despeckle"}, style="listBox", value="Median", persist=True) filtertype
-# @Float(label = "Filter Radius", value=5.0, persist=False) filter_radius
-# @String(label = "Select Threshold", choices={"NONE", "Otsu", "Triangle", "IJDefault", "Huang", "MaxEntropy", "Mean", "Shanbhag", "Yen", "Li"}, style="listBox", value="Otsu", persist=True) threshold_method
-# @Float(label = "Threshold Correction Factor", value=1.00,persist=True) threshold_corr
+# @Integer(label = "Channel Index", value=3, persist=True) channelindex
+#@ String (visibility=MESSAGE, value="Parameters for Rolling Ball Background Correction") msg2
+# @Integer(label = "Disk Radius", value=30) rb_radius
+#@ String (visibility=MESSAGE, value="Smooth Image using Filters") msg3
+# @String(label = "Method", choices={"NONE", "Median", "Min", "Max", "Mean", "Variance", "Open", "Despeckle"}, style="listBox", value="Median", persist=True) filtertype
+# @Float(label = "Radius", value=5.0, persist=False) filter_radius
+#@ String (visibility=MESSAGE, value="Thresholding Parameters") msg4
+# @String(label = "Method", choices={"NONE", "Otsu", "Triangle", "IJDefault", "Huang", "MaxEntropy", "Mean", "Shanbhag", "Yen", "Li"}, style="listBox", value="Otsu", persist=True) threshold_method
+# @Float(label = "Correction Factor", value=1.00,persist=True) threshold_corr
+#@ String (visibility=MESSAGE, value="Binary Post-Processing Parameters") msg5
 # @Boolean(label = "Fill Holes", value=True, persist=True) fill_holes
 # @Boolean(label = "Run Watershed (2D or 3D)", value=True, persist=True) watershed
 # @String(label = "Label Connectivity", choices={"4", "6", "8", "26"}, style="listBox", value="8", persist=True) watershed_connectivity
+#@ String (visibility=MESSAGE, value="Filter Objects ") msg6
 # @Integer(label = "Min. Particle Size", value=1, persist=True) minsize
 # @Integer(label = "Max. Particle Size", value=1000000, persist=True) maxsize
 # @Float(label = "Min. Circularity", value=0.0, persist=True) mincirc
