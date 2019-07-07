@@ -8,8 +8,8 @@
 # @String(label = "Select Threshold", choices={"NONE", "Otsu", "Triangle", "IJDefault", "Huang", "MaxEntropy", "Mean", "Shanbhag", "Yen", "Li"}, style="listBox", value="Otsu", persist=True) threshold_method
 # @Float(label = "Threshold Correction Factor", value=1.00,persist=True) threshold_corr
 # @Boolean(label = "Fill Holes", value=True, persist=True) fill_holes
-# @Boolean(label = "Run Watershed", value=True, persist=True) watershed
-# @String(label = "Label Connectivity", choices={"6", "26"}, style="listBox", value="6", persist=True) watershed_connectivity
+# @Boolean(label = "Run Watershed (2D or 3D)", value=True, persist=True) watershed
+# @String(label = "Label Connectivity", choices={"4", "6", "8", "26"}, style="listBox", value="8", persist=True) watershed_connectivity
 # @Integer(label = "Min. Particle Size", value=1, persist=True) minsize
 # @Integer(label = "Max. Particle Size", value=1000000, persist=True) maxsize
 # @Float(label = "Min. Circularity", value=0.0, persist=True) mincirc
@@ -238,7 +238,8 @@ if watershed:
     imp = WaterShedTools.run_watershed(imp,
                                        mj_normalize=True,
                                        mj_dynamic=1,
-                                       mj_connectivity=watershed_connectivity)
+                                       mj_connectivity=watershed_connectivity,
+                                       force_mj=True)
 
 pastack, results = AnalyzeTools.analyzeParticles(imp,
                                                  minsize,
