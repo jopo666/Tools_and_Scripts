@@ -3,9 +3,13 @@
 # @Integer(label = "Select Channel", value=1, persist=True) CHANNEL2ANAlYSE
 # @Boolean(label = "Correct Background", value=False, persist=True) CORRECT_BACKGROUND
 # @Integer(label = "Rolling Ball - Disk Radius", value=30) RB_RADIUS
-# @Boolean(label = "Light Background", value=False, persist=True) LIGHTBACKGROUND
-# @String(label = "Select RankFilter", choices={"NONE", "MEDIAN", "MIN", "MAX", "MEAN", "VARIANCE", "OPEN", "DESPECKLE"}, style="listBox", value="NONE", persist=True) RANKFILTER
-# @Float(label = "Filter Radius", value=5.0, persist=False) RADIUS
+# @ String (choices={"2D", "3D"}, style="radioButtonHorizontal") FILTERDIM
+# @String(label = "Select Filter 2D", choices={"NONE", "MEDIAN", "MIN", "MAX", "MEAN", "VARIANCE", "OPEN", "DESPECKLE"}, style="listBox", value="NONE", persist=True) RANKFILTER
+# @Integer(label = "Filter Radius", value=5.0, persist=False) RADIUS
+# @String(label = "Select 3D Filter", choices={"NONE", "MEDIAN", "MIN", "MAX", "MEAN", "VAR"}, style="listBox", value="NONE", persist=True) FILTER3D
+# @Integer(label = "Radius X", value=5.0, persist=False) RADIUSX
+# @Integer(label = "Radius Y", value=5.0, persist=False) RADIUSY
+# @Integer(label = "Radius Z", value=5.0, persist=False) RADIUSZ
 # @String(label = "Select Threshold", choices={"NONE", "Otsu", "Triangle", "IJDefault", "Huang", "MaxEntropy", "Mean", "Shanbhag", "Yen", "Li"}, style="listBox", value="NONE", persist=True) THRESHOLD
 # @Float(label = "Threshold Correction Factor", value=1.00,persist=True) CORRFACTOR
 # @Boolean(label = "Fill Holes", value=True, persist=True) FILL_HOLES
@@ -22,9 +26,13 @@
 # @OUTPUT Integer CHANNEL2ANAlYSE
 # @OUTPUT Boolean CORRECT_BACKGROUND
 # @OUTPUT Integer RB_RADIUS
-# @OUTPUT Boolean LIGHTBACKGROUND
+# @OUTPUT String FILTERDIM
 # @OUTPUT String RANKFILTER
-# @OUTPUT float RADIUS
+# @OUTPUT Integer RADIUS
+# @OUTPUT String FILTER3D
+# @OUTPUT Integer RADIUSX
+# @OUTPUT Integer RADIUSY
+# @OUTPUT Integer RADIUSZ
 # @OUTPUT String THRESHOLD
 # @OUTPUT String CORRFACTOR
 # @OUTPUT Boolean FILL_HOLES
@@ -44,8 +52,8 @@
 """
 File: 3d_analytics_adv.py
 Author: Sebastian Rhode
-Date: 2019_05_17
-Version: 0.2
+Date: 2019_07_12
+Version: 0.4
 """
 
 # append path
@@ -127,7 +135,7 @@ def run(imagefile):
     # correct background
     if CORRECT_BACKGROUND:
 
-        log.info('Removing Background using Rolling Ball ...')
+        log.info('Rolling Ball Background subtraction...')
         imp = FilterTools.apply_rollingball(imp,
                                             radius=RB_RADIUS,
                                             createBackground=CREATEBACKGROUND,
@@ -135,40 +143,41 @@ def run(imagefile):
                                             useParaboloid=USEPARABOLOID,
                                             doPresmooth=DOPRESMOOTH,
                                             correctCorners=CORRECTCORNERS)
-        #imp_b = imp.duplicate()
-        #imp_b.show("Rolling Ball")
+        # imp_b = imp.duplicate()
+        # imp_b.show("Rolling Ball")
 
-    if RANKFILTER != 'NONE':
-        # apply filter
-        log.info('Apply Filter      : ' + RANKFILTER)
-        imp = FilterTools.apply_filter(imp,
-                                       radius=RADIUS,
-                                       filtertype=RANKFILTER)
-        #imp_f = imp.duplicate()
+    if FILTERDIM == '2D':
+        if RANKFILTER != 'NONE':
+            # apply filter
+            log.info('Apply 2D Filter   : ' + RANKFILTER)
+            imp = FilterTools.apply_filter(imp,
+                                           radius=RADIUS,
+                                           filtertype=RANKFILTER)
+    if FILTERDIM == '3D':
+        if FILTER3D != 'NONE':
+            # apply filter
+            log.info('Apply 3D Filter   : ' + FILTER3D)
+            imp = FilterTools.apply_filter3d(imp,
+                                             radiusx=RADIUSX,
+                                             radiusy=RADIUSY,
+                                             radiusz=RADIUSZ,
+                                             filtertype=FILTER3D)
+        # imp_f = imp.duplicate()
         # imp_f.show("Filter")
 
     if THRESHOLD != 'NONE':
         # apply threshold
         log.info('Apply Threshold   : ' + THRESHOLD)
         log.info('Correction Factor : ' + str(CORRFACTOR))
-        """
-        imp = ThresholdTools.apply_threshold_stack(imp,
-                                                   method=THRESHOLD,
-                                                   background_threshold='dark',
-                                                   corrf=CORRFACTOR)
-        """
+
         imp = ThresholdTools.apply_threshold(imp,
                                              method=THRESHOLD,
                                              background_threshold='dark',
                                              stackopt=TH_STACKOPT,
                                              corrf=CORRFACTOR)
 
-        imp_t = imp.duplicate()
-        imp_t.show("Threshold")
-
-    # comvert to 8bit grayscale
-    #ic = ImageConverter(imp)
-    # ic.convertToGray8()
+        # imp_t = imp.duplicate()
+        # imp_t.show("Threshold")
 
     if FILL_HOLES:
         # 3D fill holes
@@ -266,7 +275,7 @@ CREATEBACKGROUND = False
 CORRECTCORNERS = True
 USEPARABOLOID = True
 DOPRESMOOTH = True
-#LIGHTBACKGROUND = False
+LIGHTBACKGROUND = False
 
 # calc histogramm for threshold using whole stack
 TH_STACKOPT = True
@@ -285,15 +294,19 @@ log.info('Use paraboloid         : ' + str(USEPARABOLOID))
 log.info('Doing PreSmooth        : ' + str(DOPRESMOOTH))
 log.info('Correct Corners        : ' + str(CORRECTCORNERS))
 log.info('-----------------------------------------')
-log.info('Filter Type            : ' + RANKFILTER)
-log.info('Filter Radius          : ' + str(RADIUS))
+log.info('Filter Dimension       : ' + FILTERDIM)
+if FILTERDIM == '2D':
+    log.info('Filter Type 2D         : ' + RANKFILTER)
+    log.info('Radius                 : ' + str(RADIUS))
+if FILTERDIM == '3D':
+    log.info('Filter Type 3D         : ' + FILTER3D)
+    log.info('Radius XYZ             : ' + str(RADIUSX) + ', ' + str(RADIUSY) + ', ' + str(RADIUSZ))
 log.info('-----------------------------------------')
 log.info('Threshold Method       : ' + THRESHOLD)
 log.info('Threshold Histo Calc   : ' + str(TH_STACKOPT))
 log.info('Threshold Corr-Factor  : ' + str(CORRFACTOR))
 log.info('-----------------------------------------')
 log.info('Label Connectivity     : ' + str(LABEL_CONNECT))
-#log.info('Label Output BitDepth  : ' + str(LABEL_BITDEPTH))
 log.info('Colorize Labels        : ' + str(LABEL_COLORIZE))
 log.info('Minimum Voxel Size     : ' + str(MINVOXSIZE))
 log.info('-----------------------------------------')
