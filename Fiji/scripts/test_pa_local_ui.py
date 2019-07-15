@@ -76,7 +76,8 @@ uiService.getDefaultUI().getConsolePane().clear()
 imagefile = imagefile.toString()
 
 # define output directory
-outputdir = r"/datadisk1/tuxedo/temp/output/"
+#outputdir = r"/datadisk1/tuxedo/temp/output/"
+outputdir = r'c:\Temp\output'
 
 # extract channel
 #extract_channel = True
@@ -198,6 +199,9 @@ imp, MetaInfo = ImportTools.openfile(imagefile,
                                      attach=attach,
                                      autoscale=autoscale)
 
+dup = imp.duplicate()
+dup.show()
+
 if verbose:
     for k, v in MetaInfo.items():
         log.info(str(k) + ' : ' + str(v))
@@ -245,7 +249,7 @@ if watershed:
                                        mj_normalize=True,
                                        mj_dynamic=1,
                                        mj_connectivity=watershed_connectivity,
-                                       force_mj=True,
+                                       force_mj=False,
                                        is3d=MetaInfo['is3d'])
 
 pastack, results = AnalyzeTools.analyzeParticles(imp,
@@ -254,12 +258,18 @@ pastack, results = AnalyzeTools.analyzeParticles(imp,
                                                  mincirc,
                                                  maxcirc,
                                                  filename=imagefile,
-                                                 addROIManager=rois)
+                                                 addROIManager=rois,
+                                                 headless=False,
+                                                 exclude=True)
 
 # apply suitable LUT to visualize particles
 pastack = ImagePlus('Particles', pastack)
-IJ.run(pastack, 'glasbey_inverted', '')
-IJ.run(pastack, 'Enhance Contrast', 'saturated=0.35')
+for i in range(pastack.getStackSize()):
+    pastack.setSliceWithoutUpdate(i + 1)
+    IJ.run(pastack, 'glasbey_inverted', '')
+    IJ.run(pastack, 'Enhance Contrast', 'saturated=0.35')
+
+pastack.show()
 
 ################ PIPELINE END ###################
 
