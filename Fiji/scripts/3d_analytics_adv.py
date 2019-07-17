@@ -188,6 +188,7 @@ def run(imagefile):
         imp = imp.getImageStack()
 
     if WATERSHED:
+        
         # run watershed on stack
         weights = ChamferWeights3D.BORGEFORS.getFloatWeights()
         normalize = True

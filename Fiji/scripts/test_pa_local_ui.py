@@ -1,21 +1,21 @@
 # @File(label = "Image File", persist=True) imagefile
-#@ String (visibility=MESSAGE, value="Channel to be processed") msg1
+# @String (visibility=MESSAGE, value="Channel to be processed") msg1
 # @Boolean(label = "Extract Channel", value=True, persist=True) extract_channel
 # @Integer(label = "Channel Index", value=3, persist=True) channelindex
-#@ String (visibility=MESSAGE, value="Parameters for Rolling Ball Background Correction") msg2
+# @String (visibility=MESSAGE, value="Parameters for Rolling Ball Background Correction") msg2
 # @Boolean(label = "Correct Background", value=True, persist=True) correct_background
 # @Integer(label = "Disk Radius", value=30) rb_radius
-#@ String (visibility=MESSAGE, value="Smooth Image using Filters") msg3
+# @String (visibility=MESSAGE, value="Smooth Image using Filters") msg3
 # @String(label = "Method", choices={"NONE", "Median", "Min", "Max", "Mean", "Variance", "Open", "Despeckle"}, style="listBox", value="Median", persist=True) filtertype
 # @Float(label = "Radius", value=5.0, persist=False) filter_radius
-#@ String (visibility=MESSAGE, value="Thresholding Parameters") msg4
+# @String (visibility=MESSAGE, value="Thresholding Parameters") msg4
 # @String(label = "Method", choices={"NONE", "Otsu", "Triangle", "IJDefault", "Huang", "MaxEntropy", "Mean", "Shanbhag", "Yen", "Li"}, style="listBox", value="Otsu", persist=True) threshold_method
 # @Float(label = "Correction Factor", value=1.00,persist=True) threshold_corr
-#@ String (visibility=MESSAGE, value="Binary Post-Processing Parameters") msg5
+# @String (visibility=MESSAGE, value="Binary Post-Processing Parameters") msg5
 # @Boolean(label = "Fill Holes", value=True, persist=True) fill_holes
 # @Boolean(label = "Run Watershed (2D or 3D)", value=True, persist=True) watershed
 # @String(label = "Label Connectivity", choices={"4", "6", "8", "26"}, style="listBox", value="8", persist=True) watershed_connectivity
-#@ String (visibility=MESSAGE, value="Filter Objects ") msg6
+# @String (visibility=MESSAGE, value="Filter Objects ") msg6
 # @Integer(label = "Min. Particle Size", value=1, persist=True) minsize
 # @Integer(label = "Max. Particle Size", value=1000000, persist=True) maxsize
 # @Float(label = "Min. Circularity", value=0.0, persist=True) mincirc
@@ -37,7 +37,6 @@
 # @OUTPUT Integer maxsize
 # @OUTPUT float mincirc
 # @OUTPUT float maxcirc
-
 
 # @UIService uiService
 # @LogService log
@@ -186,7 +185,8 @@ openallseries = True
 showomexml = False
 attach = False
 autoscale = True
-verbose = True
+verbose = False
+showorig = False
 
 # read the image
 imp, MetaInfo = ImportTools.openfile(imagefile,
@@ -199,13 +199,13 @@ imp, MetaInfo = ImportTools.openfile(imagefile,
                                      attach=attach,
                                      autoscale=autoscale)
 
-dup = imp.duplicate()
-dup.show()
+if showorig:
+    dup = imp.duplicate()
+    dup.show()
 
 if verbose:
     for k, v in MetaInfo.items():
         log.info(str(k) + ' : ' + str(v))
-
 
 # do the processing
 log.info('Start Processing ...')
@@ -241,8 +241,9 @@ imp = ThresholdTools.apply_threshold(imp,
                                      stackopt=threshold_stackoption,
                                      corrf=threshold_corr)
 
+# fill holes
 if fill_holes:
-    imp = BinaryTools.fill_holes(imp)
+    imp = BinaryTools.fill_holes(imp, is3d=MetaInfo['is3d'])
 
 if watershed:
     imp = WaterShedTools.run_watershed(imp,
