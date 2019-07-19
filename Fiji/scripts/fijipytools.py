@@ -384,6 +384,38 @@ class ExportTools:
 
         return savepath
 
+    @staticmethod
+    def save_singleplanes(imp, savepath, metainfo, mode='TZC', format='tiff'):
+        """
+        This function is still in testing.
+        """
+        titleext = imp.getTitle()
+        title = os.path.splitext(titleext)[0]
+        
+        if mode == 'TZC':
+            
+            for c in range(metainfo['SizeT']):
+                for z in range(metainfo['SizeZ']):
+                    for t in range(metainfo['SizeC']):
+                        imp.setPosition(c+1, z+1, t+1)
+                        numberedtitle = title + "_t" + IJ.pad(t, 2) + "_z" + IJ.pad(z, 4) + "_c" + IJ.pad(c, 4) + "." + format
+                        stackindex = imp.getStackIndex(c + 1, z + 1, t + 1)
+                        aframe = ImagePlus(numberedtitle, imp.getStack().getProcessor(stackindex))
+                        outputpath = os.path.join(savepath, numberedtitle)
+                        IJ.saveAs(aframe, "TIFF", outputpath)
+
+        if mode == 'Z':
+            c = 0
+            t = 0
+            for z in range(metainfo['SizeZ']):
+                imp.setPosition(c+1, z+1, t+1)
+                znumber = MiscTools.addzeros(z)
+                numberedtitle = title +  "_z" + znumber + "." + format
+                stackindex = imp.getStackIndex(c + 1, z + 1, t + 1)
+                aframe = ImagePlus(numberedtitle, imp.getStack().getProcessor(stackindex))
+                outputpath = os.path.join(savepath, numberedtitle)
+                IJ.saveAs(aframe, "TIFF", outputpath)
+
 
 class FilterTools:
 
@@ -963,6 +995,49 @@ class MiscTools:
             imp = imps[chindex - 1]
 
         return imp
+
+    @staticmethod
+    def addzeros(number):
+
+        if number < 10:
+            zerostring = '000000' + str(number)
+        if number >= 10 and number < 100:
+            zerostring = '00000' + str(number)
+        if number >= 100 and number < 1000:
+            zerostring = '0000' + str(number)
+        if number >= 1000 and number < 10000:
+            zerostring = '000' + str(number)
+        if number >= 10000 and number < 100000:
+            zerostring = '00' + str(number)
+        if number >= 100000 and number < 1000000:
+            zerostring = '0' + str(number)
+
+        return zerostring
+    
+    @staticmethod
+    def createdir(path):
+        try:
+            os.mkdir(path)
+        except OSError:
+            print ("Creation of the directory %s failed" % path)
+            dir_created = False
+        else:
+            print ("Successfully created the directory %s " % path)
+            dir_created = True
+
+        return dir_created
+        
+    @staticmethod
+    def getfiles(path, filter='ome.tiff'):
+    
+        files = []
+        # r=root, d=directories, f = files
+        for r, d, f in os.walk(path):
+            for file in f:
+                if filter in file:
+                    files.append(os.path.join(r, file))
+                
+        return files
 
 
 class JSONTools:
