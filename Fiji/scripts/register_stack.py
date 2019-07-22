@@ -1,5 +1,10 @@
 #@ File(label = "Image File", style="file", persist=True) filename
 #@ Integer(label = "Z-Plane used as Reference", value=1) refplane
+#@ Boolean(label = "Remove folder with single source images", value=False, persist=True) remove_source
+#@ Boolean(label = "Remove folder with single target images", value=False, persist=True) remove_target
+#@ Boolean(label = "Remove folder with transformations", value=False, persist=True) remove_trans
+
+
  
 # @UIService uiService
 # @LogService log
@@ -96,18 +101,58 @@ ExportTools.save_singleplanes(imp, sourcedir, MetaInfo,
                               mode='Z',
                               format='tiff')
 
+
+featuremodelindex = {0:"Translation",
+                     1:"Rigid",
+                     2:"Similarity",
+                     3:"Affine"}
+
+regmodelindex = {0:"Translation",
+                 1:"Rigid",
+                 2:"Similarity",
+                 3:"Affine",
+                 4:"Elastic",
+                 5:"Moving Least Squares"}
+
 # shrinkage option (false)
 use_shrinking_constraint = False
  
 p = Register_Virtual_Stack_MT.Param()
-# maximum image size
-p.sift.maxOctaveSize = 1024
+
+
 # inlier ratio
 p.minInlierRatio = 0.05
 # implemented transformation models for choice 0=TRANSLATION, 1=RIGID, 2=SIMILARITY, 3=AFFINE
 p.featuresModelIndex = 3
 # maximal allowed alignment error in pixels
 p.maxEpsilon = 10
+# Implemented transformation models for choice 0=TRANSLATION, 1=RIGID, 2=SIMILARITY, 3=AFFINE, 4=ELASTIC, 5=MOVING_LEAST_SQUARES
+p.registrationModelIndex = 3
+# Closest/next neighbor distance ratio
+p.rod = 0.9
+# SIFT - maximum image size
+p.sift.maxOctaveSize = 1024
+
+log.info("bUnwarpJ parameters for consistent elastic registration")
+log.info(p.elastic_param)
+log.info("-------------------------------------------------------")
+log.info("FeatureModelIndex           : " + str(p.featuresModelIndex) + " = " + str(featuremodelindex[p.featuresModelIndex]))
+log.info("RegistrationModelIndex      : " + str(p.registrationModelIndex) + " = " + str(regmodelindex[p.registrationModelIndex]))
+log.info("Max. Aligmnet Error [pixel] : " + str(p.maxEpsilon))
+log.info("Min. Inlier Ratio           : " + str(p.minInlierRatio))
+log.info("Next Neighbour Distance Ratio : " + str(p.rod))
+
+# SIFT Parameters
+print p.sift.fdBins
+print p.sift.fdSize
+print p.sift.initialSigma
+print p.sift.minOctaveSize
+print p.sift.maxOctaveSize
+print p.sift.steps
+
+print "elastic_param"
+print p.elastic_param
+
 
 # get list of all single plane files and pick one as reference
 sourcefiles = MiscTools.getfiles(sourcedir, filter='.tiff')
@@ -119,7 +164,7 @@ target = targetdir + r'/'
 trans = transformdir + r'/'
 
 # run the actual registration
-log.info('Registering z-Planes ...) 
+log.info('Registering z-Planes ...') 
 Register_Virtual_Stack_MT.exec(source, target, trans, ref, p, use_shrinking_constraint)
 
 # get the virtual stack as an ImagePlus object
@@ -135,6 +180,14 @@ savepath_pastack = ExportTools.savedata(imp,
                                         outputimagepath,
                                         extension=saveformat,
                                         replace=True)
+
+# remove directories with single images or files
+if remove_source:
+    shutil.rmtree(sourcedir, ignore_errors=True)
+if remove_target:
+    shutil.rmtree(targetdir, ignore_errors=True)
+if remove_trans:
+    shutil.rmtree(transformdir, ignore_errors=True)
 
 # finish
 log.info('Done.')
