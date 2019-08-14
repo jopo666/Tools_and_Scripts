@@ -274,7 +274,7 @@ pastack.show()
 
 ################ PIPELINE END ###################
 
-log.info('Output Path Particle Stack :' + outputimagepath)
+log.info('Output Path Particle Stack : ' + outputimagepath)
 savepath_pastack = ExportTools.savedata(pastack,
                                         outputimagepath,
                                         extension=saveformat,
