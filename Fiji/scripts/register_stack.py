@@ -1,11 +1,10 @@
-#@ File(label = "Image File", style="file", persist=True) filename
-#@ Integer(label = "Z-Plane used as Reference", value=1) refplane
-#@ Boolean(label = "Remove folder with single source images", value=False, persist=True) remove_source
-#@ Boolean(label = "Remove folder with single target images", value=False, persist=True) remove_target
-#@ Boolean(label = "Remove folder with transformations", value=False, persist=True) remove_trans
+# @ File(label = "Image File", style="file", persist=True) filename
+# @ Integer(label = "Z-Plane used as Reference", value=1) refplane
+# @ Boolean(label = "Remove folder with single source images", value=False, persist=True) remove_source
+# @ Boolean(label = "Remove folder with single target images", value=False, persist=True) remove_target
+# @ Boolean(label = "Remove folder with transformations", value=False, persist=True) remove_trans
 
 
- 
 # @UIService uiService
 # @LogService log
 
@@ -73,7 +72,7 @@ imp, MetaInfo = ImportTools.openfile(imagefile,
                                      attach=attach,
                                      autoscale=autoscale)
 
-#imp.show()
+# imp.show()
 
 # get the base directory
 basedir = os.path.dirname(imagefile)
@@ -102,21 +101,21 @@ ExportTools.save_singleplanes(imp, sourcedir, MetaInfo,
                               format='tiff')
 
 
-featuremodelindex = {0:"Translation",
-                     1:"Rigid",
-                     2:"Similarity",
-                     3:"Affine"}
+featuremodelindex = {0: "Translation",
+                     1: "Rigid",
+                     2: "Similarity",
+                     3: "Affine"}
 
-regmodelindex = {0:"Translation",
-                 1:"Rigid",
-                 2:"Similarity",
-                 3:"Affine",
-                 4:"Elastic",
-                 5:"Moving Least Squares"}
+regmodelindex = {0: "Translation",
+                 1: "Rigid",
+                 2: "Similarity",
+                 3: "Affine",
+                 4: "Elastic",
+                 5: "Moving Least Squares"}
 
 # shrinkage option (false)
 use_shrinking_constraint = False
- 
+
 p = Register_Virtual_Stack_MT.Param()
 
 
@@ -164,7 +163,7 @@ target = targetdir + r'/'
 trans = transformdir + r'/'
 
 # run the actual registration
-log.info('Registering z-Planes ...') 
+log.info('Registering z-Planes ...')
 Register_Virtual_Stack_MT.exec(source, target, trans, ref, p, use_shrinking_constraint)
 
 # get the virtual stack as an ImagePlus object
