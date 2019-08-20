@@ -1,8 +1,18 @@
+<< << << < HEAD
 # @ File(label = "Image File", style="file", persist=True) filename
 # @ Integer(label = "Z-Plane used as Reference", value=1) refplane
 # @ Boolean(label = "Remove folder with single source images", value=False, persist=True) remove_source
 # @ Boolean(label = "Remove folder with single target images", value=False, persist=True) remove_target
 # @ Boolean(label = "Remove folder with transformations", value=False, persist=True) remove_trans
+== == == =
+# @ File(label = "Image File", style="file", persist=True) filename
+# @ Integer(label = "Z-Plane used as Reference", value=1) refplane
+# @ String(label = "Feature Model", choices={"Translation", "Rigid", "Similarity", "Affine"}, style="listBox", value="Affine", persist=True) fmodelstring
+# @ String(label = "Registration Model", choices={"Translation", "Rigid", "Similarity", "Affine", "Elastic", "Moving Least Squeares"}, style="listBox", value="Affine", persist=True) rmodelstring
+# @ Boolean(label = "Remove folder with single source images", value=False, persist=True) remove_source
+# @ Boolean(label = "Remove folder with single target images", value=False, persist=True) remove_target
+# @ Boolean(label = "Remove folder with transformations", value=False, persist=True) remove_trans
+>>>>>> > 5f09ae8eee8b49031c9b3b151a31937a4f04f04d
 
 
 # @UIService uiService
@@ -101,57 +111,103 @@ ExportTools.save_singleplanes(imp, sourcedir, MetaInfo,
                               format='tiff')
 
 
-featuremodelindex = {0: "Translation",
-                     1: "Rigid",
-                     2: "Similarity",
-                     3: "Affine"}
+featuremodelindex = ["Translation",
+                     "Rigid",
+                     "Similarity",
+                     "Affine"]
 
-regmodelindex = {0: "Translation",
-                 1: "Rigid",
-                 2: "Similarity",
-                 3: "Affine",
-                 4: "Elastic",
-                 5: "Moving Least Squares"}
+regmodelindex = ["Translation",
+                 "Rigid",
+                 "Similarity",
+                 "Affine",
+                 "Elastic",
+                 "Moving Least Squares"]
+
+
+fmi = featuremodelindex.index(fmodelstring)
+rmi = regmodelindex.index(rmodelstring)
 
 # shrinkage option (false)
 use_shrinking_constraint = False
 
 p = Register_Virtual_Stack_MT.Param()
 
-
 # inlier ratio
 p.minInlierRatio = 0.05
 # implemented transformation models for choice 0=TRANSLATION, 1=RIGID, 2=SIMILARITY, 3=AFFINE
-p.featuresModelIndex = 3
+#p.featuresModelIndex = 3
+p.featuresModelIndex = fmi
 # maximal allowed alignment error in pixels
 p.maxEpsilon = 10
 # Implemented transformation models for choice 0=TRANSLATION, 1=RIGID, 2=SIMILARITY, 3=AFFINE, 4=ELASTIC, 5=MOVING_LEAST_SQUARES
-p.registrationModelIndex = 3
+#p.registrationModelIndex = 3
+p.registrationModelIndex = rmi
 # Closest/next neighbor distance ratio
 p.rod = 0.9
-# SIFT - maximum image size
-p.sift.maxOctaveSize = 1024
 
+#############    bunwarpJ Parameters   #########
+
+# consistency weight
+p.elastic_param.consistencyWeight = 10.0
+# curl weight
+p.elastic_param.curlWeight = 0.0
+# divergence weight
+p.elastic_param.divWeight
+# image similarity weight
+p.elastic_param.imageWeight = 1.0
+# image subsampling factor (from 0 to 7, representing 2**0=1 to 2**7 = 128)
+p.elastic_param.img_subsamp_fact = 0
+# landmark weight
+p.elastic_param.landmarkWeight = 0.0
+# minimum scale deformation (0 - Very Coarse, 1 - Coarse, 2 - Fine, 3 - Very Fine)
+p.elastic_param.min_scale_deformation = 1
+# maximum scale deformation (0 - Very Coarse, 1 - Coarse, 2 - Fine, 3 - Very Fine, 4 - Super Fine)
+p.elastic_param.max_scale_deformation = 3
+# mode accuracy mode (0 - Fast, 1 - Accurate, 2 - Mono)
+p.elastic_param.mode = 2
+# stopping threshold
+p.elastic_param.stopThreshold = 0.01
+
+
+#############   SIFT Parameters ################
+# SIFT - minimum and maximum image size
+p.sift.maxOctaveSize = 64
+p.sift.maxOctaveSize = 1024
+# SIFT - steps per scale octave
+p.sift.steps = 3
+# SIFT - Feature descriptor orientation bins How many bins per local histogram
+p.sift.fdBins = 8
+# SIFT - Feature descriptor size How many samples per row and column
+p.sift.fdSize = 4
+
+# log the parameters
+
+# bUnwarpJ parameters
+log.info("-----------   bUnwarpJ Parameters   -------------------")
 log.info("bUnwarpJ parameters for consistent elastic registration")
 log.info(p.elastic_param)
-log.info("-------------------------------------------------------")
-log.info("FeatureModelIndex           : " + str(p.featuresModelIndex) + " = " + str(featuremodelindex[p.featuresModelIndex]))
-log.info("RegistrationModelIndex      : " + str(p.registrationModelIndex) + " = " + str(regmodelindex[p.registrationModelIndex]))
-log.info("Max. Aligmnet Error [pixel] : " + str(p.maxEpsilon))
-log.info("Min. Inlier Ratio           : " + str(p.minInlierRatio))
-log.info("Next Neighbour Distance Ratio : " + str(p.rod))
+
+# general registration parameters
+log.info("-----------   Registration Parameters   ---------------")
+log.info("FeatureModelIndex             : " + str(p.featuresModelIndex) + " = " + str(featuremodelindex[p.featuresModelIndex]))
+log.info("RegistrationModelIndex        : " + str(p.registrationModelIndex) + " = " + str(regmodelindex[p.registrationModelIndex]))
+log.info("Max. Alignmnet Error [pixel]  : " + str(p.maxEpsilon))
+log.info("Min. Inlier Ratio             : " + str(round(p.minInlierRatio, 3)))
+log.info("Next Neighbour Distance Ratio : " + str(round(p.rod, 3)))
 
 # SIFT Parameters
-print p.sift.fdBins
-print p.sift.fdSize
-print p.sift.initialSigma
-print p.sift.minOctaveSize
-print p.sift.maxOctaveSize
-print p.sift.steps
-
-print "elastic_param"
-print p.elastic_param
-
+log.info("-----------   SIFT Parameters   -----------------------")
+# Feature descriptor orientation bins How many bins per local histogram
+log.info("Feature Descriptor bins per local histogram   : " + str(p.sift.fdBins))
+# Feature descriptor size How many samples per row and column
+log.info("Feature Descriptor samples per row and column : " + str(p.sift.fdSize))
+# Initial sigma of each Scale Octave
+log.info("Initial sigma of each Scale Octave            : " + str(round(p.sift.initialSigma, 3)))
+# Size limits for scale octaves in px: minOctaveSize < octave < maxOctaveSize
+log.info("Minimum Size for Scale Octaves [pixel]        : " + str(p.sift.minOctaveSize))
+log.info("Maximum Size for Scale Octaves [pixel]        : " + str(p.sift.maxOctaveSize))
+log.info("Steps per Scale Octave                        : " + str(p.sift.steps))
+log.info("-------------------------------------------------------")
 
 # get list of all single plane files and pick one as reference
 sourcefiles = MiscTools.getfiles(sourcedir, filter='.tiff')

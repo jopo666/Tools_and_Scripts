@@ -15,6 +15,7 @@ sys.path.append(getProperty('fiji.dir') + '/scripts')
 
 from fijipytools import ExportTools, FilterTools, ImageTools, ImportTools
 from fijipytools import AnalyzeTools, RoiTools, MiscTools, ThresholdTools
+from fijipytools import WaterShedTools, BinaryTools
 from fijipytools import JSONTools
 from ij.measure import ResultsTable
 from ij.gui import Roi, Overlay
@@ -49,7 +50,13 @@ from inra.ijpb.morphology import Reconstruction3D
 
 def run(imagefile, outputpath_orig, convert_orig2copy=False,
         sft='ome.tiff',
-        verbose=False):
+        fillholes=True,
+        watershed=True,
+        watershed_connectivity=6,
+        verbose=True):
+
+    print fillholes, watershed, watershed_connectivity
+
 
     # Opening the image
     log.info('Opening Image: ' + imagefile)
@@ -79,12 +86,13 @@ def run(imagefile, outputpath_orig, convert_orig2copy=False,
                                          attach=attach,
                                          autoscale=autoscale)
 
-   
+    if verbose:
+	    for k, v in MetaInfo.items():
+	        log.info(str(k) + ' : ' + str(v))
+
 
     if EXTRACT_CHANNEL:
 	    imp = MiscTools.splitchannel(imp, CHINDEX)
-
-
 
     # optional filtering
     if FILTERTYPE != 'NONE':
@@ -93,7 +101,7 @@ def run(imagefile, outputpath_orig, convert_orig2copy=False,
         imp = FilterTools.apply_filter(imp,
                                        radius=FILTER_RADIUS,
                                        filtertype=FILTERTYPE)
-    """   
+                                       
     # apply threshold
     log.info('Apply Threshold ...')
     imp = ThresholdTools.apply_threshold(imp,
@@ -101,16 +109,20 @@ def run(imagefile, outputpath_orig, convert_orig2copy=False,
                                          background_threshold=THRESHOLD_BGRD,
                                          stackopt=THRESHOLD_STACKOPTION)
 
-    """
+    print "3D: ", MetaInfo['is3d']
 
-    ip = imp.getProcessor()
-    ip.threshold(500)
-    imp.setProcessor(ip)
-    #IJ.run(imp, "8-bit", "")
+	# fill holes
+    if fillholes:
+        imp = BinaryTools.fill_holes(imp, is3d=MetaInfo['is3d'])
+	
+	if watershed:
+	    imp = WaterShedTools.run_watershed(imp,
+	                                       mj_normalize=True,
+	                                       mj_dynamic=1,
+	                                       mj_connectivity=watershed_connectivity,
+	                                       is3d=MetaInfo['is3d'])
 
 
-
-    
     return imp
     
 
@@ -123,7 +135,7 @@ showdir = False
 stackopt = True
 method = 'Otsu'
 background_threshold = 'dark'
-imagefile = r"c:\Temp\input\Osteosarcoma_01.ome.tiff"
+imagefile = r"c:\Temp\input\10scenes_1pos.czi"
 #imagefile = r"c:\Temp\input\nuclei3d-holes.ome.tiff"
 corrf = 1.0
 
@@ -143,8 +155,8 @@ ROIS = False
 IMAGEPATH = imagefile
 # IMAGESERIES = 0
 
-EXTRACT_CHANNEL = True
-CHINDEX = 3
+EXTRACT_CHANNEL = False
+CHINDEX = 1
 # parameters for Rolling Ball
 CREATEBACKGROUND = False
 CORRECTCORNERS = True
@@ -159,7 +171,7 @@ LIGHTBACKGROUND = False
 # parameters for filter
 #FILTERTYPE = INPUT_JSON['FILTERTYPE']
 #FILTER_RADIUS = INPUT_JSON['FILTER_RADIUS']
-FILTERTYPE = 'MEDIAN'
+FILTERTYPE = 'NONE'
 FILTER_RADIUS = 5
 
 # parameters for threshold
@@ -171,6 +183,10 @@ THRESHOLD_METHOD = 'Otsu'
 THRESHOLD_STACKOPTION = stackopt
 THRESHOLD_BGRD = 'dark'
 THRESHOLD_CORR = 1.0
+
+FILLHOLES = True
+WATERSHED = True
+CONNECTIVITY=8
 
 # parameters for saving the binary output
 SAVEFORMAT_DEFAULT = 'ome.tiff'
@@ -240,7 +256,10 @@ outputpath_orig = basename + '.' + SAVEFORMAT
 th_image = run(IMAGEPATH, outputpath_orig,
                convert_orig2copy=CONVERT_ORIGINAL,
                sft=SAVEFORMAT,
-               verbose=False)
+               fillholes=FILLHOLES,
+               watershed=WATERSHED,
+               watershed_connectivity=CONNECTIVITY,
+               verbose=True)
 
 """
 # run the actual image analysis pipeline
@@ -287,7 +306,5 @@ log.info('Done.')
 #ip = th_image.getProcessor()
 #ip = ip.convertToByte(True)
 #th_image.setProcessor(ip)
-
-
 
 th_image.show()
