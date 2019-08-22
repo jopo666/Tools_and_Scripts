@@ -12,6 +12,7 @@
 # @Integer(label = "Radius Z", value=5.0, persist=False) RADIUSZ
 # @String(label = "Select Threshold", choices={"NONE", "Otsu", "Triangle", "IJDefault", "Huang", "MaxEntropy", "Mean", "Shanbhag", "Yen", "Li"}, style="listBox", value="NONE", persist=True) THRESHOLD
 # @Float(label = "Threshold Correction Factor", value=1.00,persist=True) CORRFACTOR
+# @Boolean(label = "Use whole stack for histogram", value=True, persist=True) TH_STACKOPT
 # @Boolean(label = "Fill Holes", value=True, persist=True) FILL_HOLES
 # @Boolean(label = "Run Watershed", value=True, persist=True) WATERSHED
 # @String(label = "Label Connectivity", choices={"6", "26"}, style="listBox", value="6", persist=True) LABEL_CONNECT
@@ -34,6 +35,7 @@
 # @OUTPUT Integer RADIUSY
 # @OUTPUT Integer RADIUSZ
 # @OUTPUT String THRESHOLD
+# @OUTPUT Boolean TH_STACKOPT
 # @OUTPUT String CORRFACTOR
 # @OUTPUT Boolean FILL_HOLES
 # @OUTPUT Boolean WATERSHED
@@ -52,8 +54,8 @@
 """
 File: 3d_analytics_adv.py
 Author: Sebastian Rhode
-Date: 2019_07_12
-Version: 0.4
+Date: 2019_08_22
+Version: 0.5
 """
 
 # append path
@@ -132,7 +134,7 @@ def run(imagefile):
             imps = ChannelSplitter.split(imp)
             imp = imps[CHINDEX - 1]
 
-    # correct background
+    # correct background using rolling ball
     if CORRECT_BACKGROUND:
 
         log.info('Rolling Ball Background subtraction...')
@@ -143,8 +145,6 @@ def run(imagefile):
                                             useParaboloid=USEPARABOLOID,
                                             doPresmooth=DOPRESMOOTH,
                                             correctCorners=CORRECTCORNERS)
-        # imp_b = imp.duplicate()
-        # imp_b.show("Rolling Ball")
 
     if FILTERDIM == '2D':
         if RANKFILTER != 'NONE':
@@ -162,8 +162,6 @@ def run(imagefile):
                                              radiusy=RADIUSY,
                                              radiusz=RADIUSZ,
                                              filtertype=FILTER3D)
-        # imp_f = imp.duplicate()
-        # imp_f.show("Filter")
 
     if THRESHOLD != 'NONE':
         # apply threshold
@@ -188,14 +186,13 @@ def run(imagefile):
         imp = imp.getImageStack()
 
     if WATERSHED:
-        
         # run watershed on stack
         weights = ChamferWeights3D.BORGEFORS.getFloatWeights()
         normalize = True
         dynamic = 2
         connectivity = LABEL_CONNECT
         log.info('Run Watershed to separate particles ...')
-        #dist = BinaryImages.distanceMap(imp.getImageStack(), weights, normalize)
+        #dist = BinaryImages.distanceMap(imp.getImageStack(), weights, normalize) 
         dist = BinaryImages.distanceMap(imp, weights, normalize)
         Images3D.invert(dist)
         #imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp.getImageStack(), dynamic, connectivity, 32, False )
@@ -279,7 +276,7 @@ DOPRESMOOTH = True
 LIGHTBACKGROUND = False
 
 # calc histogramm for threshold using whole stack
-TH_STACKOPT = True
+#TH_STACKOPT = True
 
 # get the FILENAME as string
 imagefile = FILENAME.toString()
