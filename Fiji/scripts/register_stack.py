@@ -1,10 +1,18 @@
-#@ File(label = "Image File", style="file", persist=True) filename
-#@ Integer(label = "Z-Plane used as Reference", value=1) refplane
-#@ String(label = "Feature Model", choices={"Translation", "Rigid", "Similarity", "Affine"}, style="listBox", value="Affine", persist=True) fmodelstring
-#@ String(label = "Registration Model", choices={"Translation", "Rigid", "Similarity", "Affine", "Elastic", "Moving Least Squeares"}, style="listBox", value="Affine", persist=True) rmodelstring
-#@ Boolean(label = "Remove folder with single source images", value=False, persist=True) remove_source
-#@ Boolean(label = "Remove folder with single target images", value=False, persist=True) remove_target
-#@ Boolean(label = "Remove folder with transformations", value=False, persist=True) remove_trans
+<< << << < HEAD
+# @ File(label = "Image File", style="file", persist=True) filename
+# @ Integer(label = "Z-Plane used as Reference", value=1) refplane
+# @ Boolean(label = "Remove folder with single source images", value=False, persist=True) remove_source
+# @ Boolean(label = "Remove folder with single target images", value=False, persist=True) remove_target
+# @ Boolean(label = "Remove folder with transformations", value=False, persist=True) remove_trans
+== == == =
+# @ File(label = "Image File", style="file", persist=True) filename
+# @ Integer(label = "Z-Plane used as Reference", value=1) refplane
+# @ String(label = "Feature Model", choices={"Translation", "Rigid", "Similarity", "Affine"}, style="listBox", value="Affine", persist=True) fmodelstring
+# @ String(label = "Registration Model", choices={"Translation", "Rigid", "Similarity", "Affine", "Elastic", "Moving Least Squeares"}, style="listBox", value="Affine", persist=True) rmodelstring
+# @ Boolean(label = "Remove folder with single source images", value=False, persist=True) remove_source
+# @ Boolean(label = "Remove folder with single target images", value=False, persist=True) remove_target
+# @ Boolean(label = "Remove folder with transformations", value=False, persist=True) remove_trans
+>>>>>> > 5f09ae8eee8b49031c9b3b151a31937a4f04f04d
 
 
 # @UIService uiService
@@ -74,7 +82,7 @@ imp, MetaInfo = ImportTools.openfile(imagefile,
                                      attach=attach,
                                      autoscale=autoscale)
 
-#imp.show()
+# imp.show()
 
 # get the base directory
 basedir = os.path.dirname(imagefile)
@@ -121,7 +129,7 @@ rmi = regmodelindex.index(rmodelstring)
 
 # shrinkage option (false)
 use_shrinking_constraint = False
- 
+
 p = Register_Virtual_Stack_MT.Param()
 
 # inlier ratio
@@ -211,7 +219,7 @@ target = targetdir + r'/'
 trans = transformdir + r'/'
 
 # run the actual registration
-log.info('Registering z-Planes ...') 
+log.info('Registering z-Planes ...')
 Register_Virtual_Stack_MT.exec(source, target, trans, ref, p, use_shrinking_constraint)
 
 # get the virtual stack as an ImagePlus object
