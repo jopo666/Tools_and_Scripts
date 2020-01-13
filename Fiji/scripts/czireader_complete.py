@@ -1,6 +1,6 @@
 # @File(label = "Image File", persist=True) FILENAME
 # @Boolean(label = "Stitch Tiles", value=True, persist=True) STITCHTILES
-# @Integer(label = "Read Pyramid Level", value=1, persist=True) READPYLEVEL
+# @Integer(label = "Read Pyramid Level (1 - ...)", value=1, persist=True) READPYLEVEL
 # @Boolean(label = "Concatenate Series", value=True, persist=True) SETCONCAT
 # @Boolean(label = "Open All Series", value=True, persist=True) OPENALLSERIES
 # @Boolean(label = "Show OME-XML data", value=False, persist=True) SHOWOMEXML
@@ -261,6 +261,10 @@ autoscale = True
 imagefile = FILENAME.toString()
 SETFLATRES=False
 
+# check for meaningful pyramid level
+if READPYLEVEL == 0:
+	log.info('PyLevel = 0 is not valid. Use 1')
+	READPYLEVEL = 1
 
 # read the CZI image
 imp, info = readczi(imagefile,
