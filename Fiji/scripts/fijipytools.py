@@ -1,11 +1,14 @@
 # @LogService log
 
-"""
-File: fijipytoools.py
-Author: Sebastian Rhode
-Version: 1.2
-Date: 2019_07_16
-"""
+#################################################################
+# File        : fijipytools.py
+# Version     : 1.4
+# Author      : czsrh
+# Date        : 18.02.2020
+# Institution : Carl Zeiss Microscopy GmbH
+#
+# Copyright (c) 2018 Carl Zeiss AG, Germany. All Rights Reserved.
+#################################################################
 
 import os
 import json
@@ -123,6 +126,8 @@ class ImportTools:
         if metainfo['Extension'] == '.czi':
 
             # read the CZI file using the CZIReader
+            # pylevel = 0 - read the full resolution image
+
             imp, metainfo = ImportTools.readCZI(imagefile, metainfo,
                                                 stitchtiles=stitchtiles,
                                                 setflatres=setflatres,
@@ -261,7 +266,7 @@ class ImportTools:
         metainfo['SizeX'] = czireader.getSizeX()
         metainfo['SizeY'] = czireader.getSizeY()
 
-        # check for autostitching and possibility to read attchmenst
+        # check for autostitching and possibility to read attachment
         metainfo['AllowAutoStitching'] = czireader.allowAutostitching()
         metainfo['CanReadAttachments'] = czireader.canReadAttachments()
 
@@ -547,7 +552,7 @@ class WaterShedTools:
                       is3d=False):
 
         if not is3d:
-            
+            print('Detected 2D image.')
             # run watershed on 2D image
             print('Watershed : 2D image')
             imp = WaterShedTools.edm_watershed(imp)
@@ -575,15 +580,16 @@ class WaterShedTools:
         for index in range(1, nslices + 1):
             # get the image processor
             ip = stack.getProcessor(index)
-            if ip.isBinary is False:
-                # convert to 8bit without rescaling
-                ImageConverter.setDoScaling(False)
-                ImageConverter(imp).convertToGray8()
-            else:
-                edm = EDM()
-                edm.setup("watershed", None)
-                edm.run(ip)
-
+            
+            if not ip.isBinary():
+                ip = BinaryImages.binarize(ip)
+            print('Apply Watershed to Binary image ...')
+            print(type(ip))
+            print('isBinary : ', ip.isBinary())
+            edm = EDM()
+            edm.setup("watershed", None)
+            edm.run(ip)
+            
         return imp
 
     @staticmethod
@@ -733,13 +739,17 @@ class ThresholdTools:
 class AnalyzeTools:
 
     @staticmethod
-    def analyzeParticles(imp, minsize, maxsize, mincirc, maxcirc,
+    def analyzeParticles(imp,
+                         minsize,
+                         maxsize,
+                         mincirc,
+                         maxcirc,
                          filename='Test.czi',
-                         addROIManager=True,
+                         addROIManager=False,
                          headless=False,
                          exclude=True):
 
-        if addROIManager is True:
+        if addROIManager:
 
             # get the ROI manager instance
             rm = RoiManager.getInstance()
@@ -747,14 +757,14 @@ class AnalyzeTools:
                 rm = RoiManager()
             rm.runCommand("Associate", "true")
 
-            if exclude is False:
+            if not exclude:
                 options = PA.SHOW_ROI_MASKS \
                     + PA.SHOW_RESULTS \
                     + PA.DISPLAY_SUMMARY \
                     + PA.ADD_TO_MANAGER \
                     + PA.ADD_TO_OVERLAY \
 
-            if exclude is True:
+            if exclude:
                 options = PA.SHOW_ROI_MASKS \
                     + PA.SHOW_RESULTS \
                     + PA.DISPLAY_SUMMARY \
@@ -762,15 +772,15 @@ class AnalyzeTools:
                     + PA.ADD_TO_OVERLAY \
                     + PA.EXCLUDE_EDGE_PARTICLES
 
-        if addROIManager is False:
+        if not addROIManager:
 
-            if exclude is False:
+            if not exclude:
                 options = PA.SHOW_ROI_MASKS \
                     + PA.SHOW_RESULTS \
                     + PA.DISPLAY_SUMMARY \
                     + PA.ADD_TO_OVERLAY \
 
-            if exclude is True:
+            if exclude:
                 options = PA.SHOW_ROI_MASKS \
                     + PA.SHOW_RESULTS \
                     + PA.DISPLAY_SUMMARY \
@@ -796,6 +806,7 @@ class AnalyzeTools:
             particlestack.addSlice(mmap.getProcessor())
 
         return particlestack, results
+
 
     @staticmethod
     def create_resultfilename(filename, suffix='_Results', extension='txt'):
@@ -853,10 +864,10 @@ class MiscTools:
     def getextension(splitresult):
 
         if len(splitresult) == 2:
-            # only one extension part, eg *.czi detetected
+            # only one extension part, eg *.czi detected
             extension = str(splitresult[-1])
         if len(splitresult) >= 3:
-            # two extension part, eg *.ome.tiff detetected
+            # two extension part, eg *.ome.tiff detected
             # extension = str(splitresult[1] + splitresult[2])
 
             ext2 = splitresult[-2]
@@ -912,7 +923,7 @@ class MiscTools:
         newCal.setYUnit(unit)
         newCal.setZUnit(unit)
 
-        # apply the new calibratiion
+        # apply the new calibration
         imp.setCalibration(newCal)     
         
         return imp
