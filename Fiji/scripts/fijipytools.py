@@ -1,18 +1,19 @@
 # @LogService log
 
 #################################################################
+#
 # File        : fijipytools.py
-# Version     : 1.4
+# Version     : 1.5
 # Author      : czsrh
-# Date        : 18.02.2020
+# Date        : 21.02.2020
 # Institution : Carl Zeiss Microscopy GmbH
 #
-# Copyright (c) 2018 Carl Zeiss AG, Germany. All Rights Reserved.
 #################################################################
 
 import os
 import json
-from java.lang import Double
+from java.lang import Double, Integer
+from java.awt import GraphicsEnvironment
 from ij import IJ, ImagePlus, ImageStack, Prefs
 from ij.process import ImageProcessor, ImageConverter
 from ij.process import StackStatistics
@@ -749,6 +750,10 @@ class AnalyzeTools:
                          headless=False,
                          exclude=True):
 
+        if GraphicsEnvironment.isHeadless():
+            print('Headless Mode detected. Do not use ROI Manager.')
+            addROIManager=False
+        
         if addROIManager:
 
             # get the ROI manager instance
@@ -791,6 +796,11 @@ class AnalyzeTools:
             + PA.LABELS \
             + PA.AREA \
             + PA.RECT \
+            + PA.PERIMETER \
+            + PA.SLICE \
+            + PA.SHAPE_DESCRIPTORS \
+            + PA.CENTER_OF_MASS \
+            + PA.CENTROID
 
         results = ResultsTable()
         p = PA(options, measurements, results, minsize, maxsize, mincirc, maxcirc)
