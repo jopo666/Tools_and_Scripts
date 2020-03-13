@@ -1,15 +1,19 @@
 # @LogService log
 
-"""
-File: fijipytoools.py
-Author: Sebastian Rhode
-Version: 1.2
-Date: 2019_07_16
-"""
+#################################################################
+#
+# File        : fijipytools.py
+# Version     : 1.5
+# Author      : czsrh
+# Date        : 21.02.2020
+# Institution : Carl Zeiss Microscopy GmbH
+#
+#################################################################
 
 import os
 import json
-from java.lang import Double
+from java.lang import Double, Integer
+from java.awt import GraphicsEnvironment
 from ij import IJ, ImagePlus, ImageStack, Prefs
 from ij.process import ImageProcessor, ImageConverter
 from ij.process import StackStatistics
@@ -123,6 +127,8 @@ class ImportTools:
         if metainfo['Extension'] == '.czi':
 
             # read the CZI file using the CZIReader
+            # pylevel = 0 - read the full resolution image
+
             imp, metainfo = ImportTools.readCZI(imagefile, metainfo,
                                                 stitchtiles=stitchtiles,
                                                 setflatres=setflatres,
@@ -261,7 +267,7 @@ class ImportTools:
         metainfo['SizeX'] = czireader.getSizeX()
         metainfo['SizeY'] = czireader.getSizeY()
 
-        # check for autostitching and possibility to read attchmenst
+        # check for autostitching and possibility to read attachment
         metainfo['AllowAutoStitching'] = czireader.allowAutostitching()
         metainfo['CanReadAttachments'] = czireader.canReadAttachments()
 
@@ -395,9 +401,10 @@ class ExportTools:
         
         if mode == 'TZC':
             
-            for c in range(metainfo['SizeT']):
+            for t in range(metainfo['SizeT']):
                 for z in range(metainfo['SizeZ']):
-                    for t in range(metainfo['SizeC']):
+                    for c in range(metainfo['SizeC']):
+                        # set position - channel, slice, frame
                         imp.setPosition(c+1, z+1, t+1)
                         numberedtitle = title + "_t" + IJ.pad(t, 2) + "_z" + IJ.pad(z, 4) + "_c" + IJ.pad(c, 4) + "." + format
                         stackindex = imp.getStackIndex(c + 1, z + 1, t + 1)
@@ -409,6 +416,7 @@ class ExportTools:
             c = 0
             t = 0
             for z in range(metainfo['SizeZ']):
+                # set position - channel, slice, frame
                 imp.setPosition(c+1, z+1, t+1)
                 znumber = MiscTools.addzeros(z)
                 numberedtitle = title +  "_z" + znumber + "." + format
@@ -545,7 +553,7 @@ class WaterShedTools:
                       is3d=False):
 
         if not is3d:
-            
+            print('Detected 2D image.')
             # run watershed on 2D image
             print('Watershed : 2D image')
             imp = WaterShedTools.edm_watershed(imp)
@@ -573,15 +581,16 @@ class WaterShedTools:
         for index in range(1, nslices + 1):
             # get the image processor
             ip = stack.getProcessor(index)
-            if ip.isBinary is False:
-                # convert to 8bit without rescaling
-                ImageConverter.setDoScaling(False)
-                ImageConverter(imp).convertToGray8()
-            else:
-                edm = EDM()
-                edm.setup("watershed", None)
-                edm.run(ip)
-
+            
+            if not ip.isBinary():
+                ip = BinaryImages.binarize(ip)
+            print('Apply Watershed to Binary image ...')
+            print(type(ip))
+            print('isBinary : ', ip.isBinary())
+            edm = EDM()
+            edm.setup("watershed", None)
+            edm.run(ip)
+            
         return imp
 
     @staticmethod
@@ -731,13 +740,21 @@ class ThresholdTools:
 class AnalyzeTools:
 
     @staticmethod
-    def analyzeParticles(imp, minsize, maxsize, mincirc, maxcirc,
+    def analyzeParticles(imp,
+                         minsize,
+                         maxsize,
+                         mincirc,
+                         maxcirc,
                          filename='Test.czi',
-                         addROIManager=True,
+                         addROIManager=False,
                          headless=False,
                          exclude=True):
 
-        if addROIManager is True:
+        if GraphicsEnvironment.isHeadless():
+            print('Headless Mode detected. Do not use ROI Manager.')
+            addROIManager=False
+        
+        if addROIManager:
 
             # get the ROI manager instance
             rm = RoiManager.getInstance()
@@ -745,14 +762,14 @@ class AnalyzeTools:
                 rm = RoiManager()
             rm.runCommand("Associate", "true")
 
-            if exclude is False:
+            if not exclude:
                 options = PA.SHOW_ROI_MASKS \
                     + PA.SHOW_RESULTS \
                     + PA.DISPLAY_SUMMARY \
                     + PA.ADD_TO_MANAGER \
                     + PA.ADD_TO_OVERLAY \
 
-            if exclude is True:
+            if exclude:
                 options = PA.SHOW_ROI_MASKS \
                     + PA.SHOW_RESULTS \
                     + PA.DISPLAY_SUMMARY \
@@ -760,15 +777,15 @@ class AnalyzeTools:
                     + PA.ADD_TO_OVERLAY \
                     + PA.EXCLUDE_EDGE_PARTICLES
 
-        if addROIManager is False:
+        if not addROIManager:
 
-            if exclude is False:
+            if not exclude:
                 options = PA.SHOW_ROI_MASKS \
                     + PA.SHOW_RESULTS \
                     + PA.DISPLAY_SUMMARY \
                     + PA.ADD_TO_OVERLAY \
 
-            if exclude is True:
+            if exclude:
                 options = PA.SHOW_ROI_MASKS \
                     + PA.SHOW_RESULTS \
                     + PA.DISPLAY_SUMMARY \
@@ -779,6 +796,11 @@ class AnalyzeTools:
             + PA.LABELS \
             + PA.AREA \
             + PA.RECT \
+            + PA.PERIMETER \
+            + PA.SLICE \
+            + PA.SHAPE_DESCRIPTORS \
+            + PA.CENTER_OF_MASS \
+            + PA.CENTROID
 
         results = ResultsTable()
         p = PA(options, measurements, results, minsize, maxsize, mincirc, maxcirc)
@@ -794,6 +816,7 @@ class AnalyzeTools:
             particlestack.addSlice(mmap.getProcessor())
 
         return particlestack, results
+
 
     @staticmethod
     def create_resultfilename(filename, suffix='_Results', extension='txt'):
@@ -851,10 +874,10 @@ class MiscTools:
     def getextension(splitresult):
 
         if len(splitresult) == 2:
-            # only one extension part, eg *.czi detetected
+            # only one extension part, eg *.czi detected
             extension = str(splitresult[-1])
         if len(splitresult) >= 3:
-            # two extension part, eg *.ome.tiff detetected
+            # two extension part, eg *.ome.tiff detected
             # extension = str(splitresult[1] + splitresult[2])
 
             ext2 = splitresult[-2]
@@ -896,7 +919,23 @@ class MiscTools:
                + " pixel_width=" + str(scaleX)
                + " pixel_height=" + str(scaleY)
                + " voxel_depth=" + str(scaleZ))
+        
+        # create new Calibration object
+        newCal = Calibration()
 
+        # set the new paramters
+        newCal.pixelWidth = scaleX
+        newCal.pixelHeight = scaleY
+        newCal.pixelDepth = scaleZ
+
+        # set the correct unit fro the scaling
+        newCal.setXUnit(unit)
+        newCal.setYUnit(unit)
+        newCal.setZUnit(unit)
+
+        # apply the new calibration
+        imp.setCalibration(newCal)     
+        
         return imp
 
     @staticmethod
@@ -988,6 +1027,36 @@ class MiscTools:
                     files.append(os.path.join(r, file))
                 
         return files
+
+    @staticmethod
+    def import_sequence(inputdir,
+                        number=10,
+                        start=1,
+                        increment=1,
+                        scale=100,
+                        filepattern='*.',
+                        sort=True,
+                        use_virtualstack=False):
+
+        args = "open=" + inputdir
+        args += " number=" + str(number)
+        args += " starting=" + str(start)
+        args += " increment=" + str(increment)
+        args += " scale=" + str(scale)
+        args += " file=" + filepattern
+
+        if sort:
+            args += " sort"
+        if use_virtualstack:
+            args += " use"
+
+        print "Import Sequence Arguments : ", args
+
+        IJ.run("Image Sequence...", args)
+        imp = IJ.getImage()
+
+        return imp
+
 
 
 class JSONTools:
