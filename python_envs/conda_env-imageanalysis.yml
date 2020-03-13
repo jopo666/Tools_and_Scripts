@@ -1,0 +1,23 @@
+# run: conda env create --file environment.yml
+name: imageanalysis
+dependencies:
+- python>=3.z
+- conda
+- numpy
+- pandas
+- seaborn
+- jupyter
+- xml2dict
+- dask
+- pip
+- pip:
+  # works for regular pip packages
+  - czifle
+  - apeer-dev-kit
+  - apeer-ometiff-library
+  - napari
+  - aicsimageio
+  - czmodel
+  - zarr
+#  # and for wheels
+#  - https://www.lfd.uci.edu/~gohlke/pythonlibs/#javabridge
