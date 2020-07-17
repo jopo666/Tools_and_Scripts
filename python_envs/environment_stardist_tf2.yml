@@ -1,0 +1,45 @@
+name: stardist_tf2
+dependencies:
+    - python>=3.8
+    - conda
+    - pip
+    - tensorflow>=2.2.0
+    - jupyter
+    - ipykernel
+    - ipywidgets
+    - nb_conda
+    - xmltodict
+    - pandas
+    - seaborn
+    - numpy
+    - scikit-image
+    - pyqt
+    - scipy
+    - matplotlib
+    - zarr
+    - dask
+    - lxml
+    - scipy
+    - autopep8
+    - progressbar2
+    - imagecodecs>=2020.2.18
+    - pip:
+          - stardist>=0.6.0
+          - csbdeep>=0.6.0
+          - aicsimageio
+          - aicspylibczi
+          - czifile
+          - napari
+          - napari-aicsimageio
+          - MightyMosaic
+          - silence-tensorflow
+          - apeer-ometiff-library
+          - apeer-dev-kit
+          - ome-zarr
+
+# conda env create -f environment_stardist_tf2.yml
+# conda env update --name stardist --file environment_stardist_tf2.yml
+#
+# verfify CUDA
+# nvcc --version
+# nvidia-smi

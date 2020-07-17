@@ -1,0 +1,37 @@
+name: stardist
+dependencies:
+    - python>=3.7
+    - pip
+    - tensorflow
+    - jupyter
+    - ipykernel
+    - ipywidgets
+    - nb_conda
+    - xmltodict
+    - pandas
+    - seaborn
+    - numpy
+    - scikit-image
+    - pyqt
+    - scipy
+    - matplotlib
+    - zarr
+    - lxml
+    - scipy
+    - autopep8
+    - progressbar2
+    - imagecodecs>=2020.2.18
+    - pip:
+          - stardist
+          - aicsimageio
+          - czifile
+          - napari
+          - napari-aicsimagio
+          - aicspylibczi
+          - MightyMosaic
+          - silence-tensorflow
+          - apeer-ometiff-library
+          - apeer-dev-kit
+
+# conda env create -f environment_stardist.yml
+# conda env update --name stardist --file environment_stardist.yml

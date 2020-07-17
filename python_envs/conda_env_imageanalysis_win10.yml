@@ -1,0 +1,35 @@
+# run: conda env create --file environment.yml
+name: imageanalysis_win10
+channels:
+  - defaults
+dependencies:
+- python=3.6
+- conda
+- docutils=0.15.2
+- pip
+- vs2015_runtime
+- wheel
+- numpy
+- pandas
+- seaborn
+- jupyter
+- widgetsnbextension
+- matplotlib
+- xmltodict
+- ipywidgets
+- lxml
+- openpyxl
+- xlrd
+- xlsxwriter
+- xlwings
+- xlwt
+- dask
+- pip:
+  - javabridge-1.0.18-cp36-cp36m-win_amd64.whl
+  - -r file:requirements.txt
+
+
+# works for regular pip packages
+#  - javabridge-1.0.18-cp37-cp37m-win_amd64.whl
+#  # and for wheels
+#  - https://www.lfd.uci.edu/~gohlke/pythonlibs/#javabridge

@@ -1,0 +1,23 @@
+Tensorboard is a browser based visualization tool for the training of deep learning models using TensorFlow. It is typically invoked on the log directory that is output from the TensorFlow training process. It is not straightforward to use it to visualize a model stored as a single protobuf (.pb) file.
+
+Here is how to do that:
+
+Install TensorFlow and Tensorboard, if you do not have them already:
+
+$ pip3 install -U --user tensorflow tensorboard
+Convert the protobuf file to a file that Tensorboard can work with using an import script that ships with TensorFlow:
+
+$ python3 ~/.local/lib/python3.6/site-packages/tensorflow/python/tools/import_pb_to_tensorboard.py --model_dir foobar_model.pb --log_dir foobar_log_dir
+
+This script creates a log directory you requested for if it does not exist. It creates a file name of the form events.out.tfevents.1557253678.your-hostname that Tensorboard understands.
+Note that it is better to pass in a different log directory for every different model.
+
+Another thing to note is that the option is named --model_dir but it actually expects a protobuf file as input.
+
+Now we can invoke Tensorboard with the log directory as input:
+
+$ tensorboard --logdir=foobar_log_dir
+
+The tensorboard executable file should be present in your ~/.local/bin directory. If this path is not in your PATH environment variable, consider adding it. Alternatively, you can invoke the executable with its absolute path too.
+
+You can visualize and explore the structure of your model in Tensorboard by opening localhost:6006 in your browser.

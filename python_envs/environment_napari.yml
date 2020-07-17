@@ -1,0 +1,40 @@
+name: napari
+channels:
+  - conda-forge
+dependencies:
+  - nb_conda
+  - xmltodict
+  - pandas
+  - seaborn
+  - scipy
+  - matplotlib
+  - zarr
+  - lxml
+  - scipy
+  - autopep8
+  - progressbar2
+  - scikit-image
+  - jupyterlab
+  - czifile
+  - imagecodecs
+  - napari
+  - magicgui
+  - nptyping
+  - imagecodecs>=2020.2.18
+  - pip:
+        - stardist
+        - aicsimageio
+        - imagecodecs
+        - napari
+        - napari-aicsimageio
+        - aicspylibczi
+        - MightyMosaic
+        - silence-tensorflow
+        - apeer-ometiff-library
+        - apeer-dev-kit
+        - magicgui
+
+# conda env create -f environment_napari.yml
+# conda env update --name napari --file environment_napari.yml
+
+# pip install napari aicsimageio jupyterlab czifile matplotlib magicgui napari-aicsimageio aicspylibczi MightyMosaic seaborn progressbar2 pandas lxml -U
