@@ -1,0 +1,26 @@
+name: stardist
+dependencies:
+    - python>=3.8
+    - conda
+    - pip
+    - cudatoolkit=10.1
+    - cudnn
+    - pip:
+          - tensorflow>=2.3.1
+          - stardist>=0.6.0
+          - csbdeep>=0.6.0
+          - aicsimageio
+          - aicspylibczi
+          - czifile
+          - napari
+          - napari-aicsimageio
+          - MightyMosaic
+          - silence-tensorflow
+          - apeer-ometiff-library
+          - apeer-dev-kit
+          - ome-zarr
+          - pandas
+
+# conda env create -f environment_stardist_new.yml
+# conda env update --name stardist --file environment_stardist_new.yml
+
