@@ -47,7 +47,7 @@ uiService.getDefaultUI().getConsolePane().clear()
 
 # open the image
 imagefile = filename.toString()
-log.info('Opening CZI stack: ' + imagefile)
+log.info('Opening Stack: ' + imagefile)
 
 # stitch togehter image tiles
 stitchtiles = True

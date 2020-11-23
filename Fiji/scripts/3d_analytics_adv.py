@@ -54,8 +54,8 @@
 """
 File: 3d_analytics_adv.py
 Author: Sebastian Rhode
-Date: 2019_08_22
-Version: 0.5
+Date: 2020_10_20
+Version: 0.7
 """
 
 # append path
@@ -63,7 +63,7 @@ import os
 import sys
 #scriptdir = os.path.join(os.getcwd(), 'Scripts')
 # sys.path.append(scriptdir)
-#log.info('Fiji Script Directory: ' + scriptdir)
+#log.log(LogLevel.INFO, 'Fiji Script Directory: ' + scriptdir)
 from sys import path
 from java.lang.System import getProperty
 path.append(getProperty('fiji.dir') + '/scripts')
@@ -89,6 +89,7 @@ from java.awt import Color
 from java.util import Random
 from jarray import zeros
 from org.scijava.vecmath import Point3f, Color3f
+from org.scijava.log import LogLevel
 
 # MorphoLibJ imports
 from inra.ijpb.binary import BinaryImages, ChamferWeights3D
@@ -111,33 +112,33 @@ from inra.ijpb.morphology import Reconstruction3D
 def run(imagefile):
 
     # Opening the image
-    log.info('Opening Image: ' + imagefile)
+    log.log(LogLevel.INFO, 'Opening Image: ' + imagefile)
 
     # open image file and get a specific series
     imp, MetaInfo = ImportTools.openfile(imagefile)
 
-    log.info('File Extension   : ' + MetaInfo['Extension'])
+    log.log(LogLevel.INFO, 'File Extension   : ' + MetaInfo['Extension'])
     if 'ResolutionCount' in MetaInfo:
-        log.info('Resolution Count : ' + str(MetaInfo['ResolutionCount']))
+        log.log(LogLevel.INFO, 'Resolution Count : ' + str(MetaInfo['ResolutionCount']))
     if 'SeriesCount' in MetaInfo:
-        log.info('SeriesCount      : ' + str(MetaInfo['SeriesCount']))
+        log.log(LogLevel.INFO, 'SeriesCount      : ' + str(MetaInfo['SeriesCount']))
     if 'SizeC' in MetaInfo:
-        log.info('Channel Count    : ' + str(MetaInfo['SizeC']))
+        log.log(LogLevel.INFO, 'Channel Count    : ' + str(MetaInfo['SizeC']))
 
     # do the processing
-    log.info('Start Processing ...')
+    log.log(LogLevel.INFO, 'Start Processing ...')
 
     if EXTRACT_CHANNEL:
         # get the correct channel
         if MetaInfo['SizeC'] > 1:
-            log.info('Extract Channel  : ' + str(CHINDEX))
+            log.log(LogLevel.INFO, 'Extract Channel  : ' + str(CHINDEX))
             imps = ChannelSplitter.split(imp)
             imp = imps[CHINDEX - 1]
 
     # correct background using rolling ball
     if CORRECT_BACKGROUND:
 
-        log.info('Rolling Ball Background subtraction...')
+        log.log(LogLevel.INFO, 'Rolling Ball Background subtraction...')
         imp = FilterTools.apply_rollingball(imp,
                                             radius=RB_RADIUS,
                                             createBackground=CREATEBACKGROUND,
@@ -149,14 +150,14 @@ def run(imagefile):
     if FILTERDIM == '2D':
         if RANKFILTER != 'NONE':
             # apply filter
-            log.info('Apply 2D Filter   : ' + RANKFILTER)
+            log.log(LogLevel.INFO, 'Apply 2D Filter   : ' + RANKFILTER)
             imp = FilterTools.apply_filter(imp,
                                            radius=RADIUS,
                                            filtertype=RANKFILTER)
     if FILTERDIM == '3D':
         if FILTER3D != 'NONE':
             # apply filter
-            log.info('Apply 3D Filter   : ' + FILTER3D)
+            log.log(LogLevel.INFO, 'Apply 3D Filter   : ' + FILTER3D)
             imp = FilterTools.apply_filter3d(imp,
                                              radiusx=RADIUSX,
                                              radiusy=RADIUSY,
@@ -165,8 +166,8 @@ def run(imagefile):
 
     if THRESHOLD != 'NONE':
         # apply threshold
-        log.info('Apply Threshold   : ' + THRESHOLD)
-        log.info('Correction Factor : ' + str(CORRFACTOR))
+        log.log(LogLevel.INFO, 'Apply Threshold   : ' + THRESHOLD)
+        log.log(LogLevel.INFO, 'Correction Factor : ' + str(CORRFACTOR))
 
         imp = ThresholdTools.apply_threshold(imp,
                                              method=THRESHOLD,
@@ -179,7 +180,7 @@ def run(imagefile):
 
     if FILL_HOLES:
         # 3D fill holes
-        log.info('3D Fill Holes ...')
+        log.log(LogLevel.INFO, '3D Fill Holes ...')
         imp = Reconstruction3D.fillHoles(imp.getImageStack())
 
     if not FILL_HOLES:
@@ -191,7 +192,7 @@ def run(imagefile):
         normalize = True
         dynamic = 2
         connectivity = LABEL_CONNECT
-        log.info('Run Watershed to separate particles ...')
+        log.log(LogLevel.INFO, 'Run Watershed to separate particles ...')
         #dist = BinaryImages.distanceMap(imp.getImageStack(), weights, normalize) 
         dist = BinaryImages.distanceMap(imp, weights, normalize)
         Images3D.invert(dist)
@@ -199,7 +200,7 @@ def run(imagefile):
         imp = ExtendedMinimaWatershed.extendedMinimaWatershed(dist, imp, dynamic, connectivity, 32, False)
 
     # extend borders
-    log.info('Border Extension ...')
+    log.log(LogLevel.INFO, 'Border Extension ...')
     # create BorderManager and add Zeros in all dimensions
     bmType = BorderManager3D.Type.fromLabel("BLACK")
     bm = bmType.createBorderManager(imp)
@@ -212,24 +213,24 @@ def run(imagefile):
     pastack = ImagePlus('Particles', imp)
 
     # check for pixel in 3d by size
-    log.info('Filtering VoxelSize - Minimum : ' + str(MINVOXSIZE))
+    log.log(LogLevel.INFO, 'Filtering VoxelSize - Minimum : ' + str(MINVOXSIZE))
     pastack = BinaryImages.volumeOpening(pastack.getStack(), MINVOXSIZE)
     imp = ImagePlus('Particles Filtered', pastack)
     pastack = BinaryImages.componentsLabeling(imp, LABEL_CONNECT, LABEL_BITDEPTH)
 
     # get the labels
     labels = LabelImages.findAllLabels(pastack)
-    log.info('Labels Filtered : ' + str(len(labels)))
+    log.log(LogLevel.INFO, 'Labels Filtered : ' + str(len(labels)))
 
     # run 3D particle analysis
-    log.info('3D Particle Analysis ...')
+    log.log(LogLevel.INFO, '3D Particle Analysis ...')
     PA3d = ParticleAnalysis3DPlugin()
     results = PA3d.process(pastack)
 
     # colorize the labels
     if LABEL_COLORIZE:
 
-        log.info('Colorize Lables ...')
+        log.log(LogLevel.INFO, 'Colorize Lables ...')
         #maxLabel = 255
         maxLabel = len(labels)
         bgColor = Color.BLACK
@@ -281,44 +282,45 @@ LIGHTBACKGROUND = False
 # get the FILENAME as string
 imagefile = FILENAME.toString()
 
-log.info('Starting pipeline ...')
-log.info('Image Filename         : ' + imagefile)
-log.info('Channel to Analyse     : ' + str(CHINDEX))
-log.info('-----------------------------------------')
-log.info('Correct Background     : ' + str(CORRECT_BACKGROUND))
-log.info('Rolling Ball Radius    : ' + str(RB_RADIUS))
-log.info('Light Background       : ' + str(LIGHTBACKGROUND))
-log.info('Use paraboloid         : ' + str(USEPARABOLOID))
-log.info('Doing PreSmooth        : ' + str(DOPRESMOOTH))
-log.info('Correct Corners        : ' + str(CORRECTCORNERS))
-log.info('-----------------------------------------')
-log.info('Filter Dimension       : ' + FILTERDIM)
+#log.info('Starting pipeline ...')
+log.log(LogLevel.INFO, 'Starting pipeline ...')
+log.log(LogLevel.INFO, 'Image Filename         : ' + imagefile)
+log.log(LogLevel.INFO, 'Channel to Analyse     : ' + str(CHINDEX))
+log.log(LogLevel.INFO, '-----------------------------------------')
+log.log(LogLevel.INFO, 'Correct Background     : ' + str(CORRECT_BACKGROUND))
+log.log(LogLevel.INFO, 'Rolling Ball Radius    : ' + str(RB_RADIUS))
+log.log(LogLevel.INFO, 'Light Background       : ' + str(LIGHTBACKGROUND))
+log.log(LogLevel.INFO, 'Use paraboloid         : ' + str(USEPARABOLOID))
+log.log(LogLevel.INFO, 'Doing PreSmooth        : ' + str(DOPRESMOOTH))
+log.log(LogLevel.INFO, 'Correct Corners        : ' + str(CORRECTCORNERS))
+log.log(LogLevel.INFO, '-----------------------------------------')
+log.log(LogLevel.INFO, 'Filter Dimension       : ' + FILTERDIM)
 if FILTERDIM == '2D':
-    log.info('Filter Type 2D         : ' + RANKFILTER)
-    log.info('Radius                 : ' + str(RADIUS))
+    log.log(LogLevel.INFO, 'Filter Type 2D         : ' + RANKFILTER)
+    log.log(LogLevel.INFO, 'Radius                 : ' + str(RADIUS))
 if FILTERDIM == '3D':
-    log.info('Filter Type 3D         : ' + FILTER3D)
-    log.info('Radius XYZ             : ' + str(RADIUSX) + ', ' + str(RADIUSY) + ', ' + str(RADIUSZ))
-log.info('-----------------------------------------')
-log.info('Threshold Method       : ' + THRESHOLD)
-log.info('Threshold Histo Calc   : ' + str(TH_STACKOPT))
-log.info('Threshold Corr-Factor  : ' + str(CORRFACTOR))
-log.info('-----------------------------------------')
-log.info('Label Connectivity     : ' + str(LABEL_CONNECT))
-log.info('Colorize Labels        : ' + str(LABEL_COLORIZE))
-log.info('Minimum Voxel Size     : ' + str(MINVOXSIZE))
-log.info('-----------------------------------------')
-log.info('Save Format used       : ' + SAVEFORMAT)
-log.info('------------  START IMAGE ANALYSIS ------------')
+    log.log(LogLevel.INFO, 'Filter Type 3D         : ' + FILTER3D)
+    log.log(LogLevel.INFO, 'Radius XYZ             : ' + str(RADIUSX) + ', ' + str(RADIUSY) + ', ' + str(RADIUSZ))
+log.log(LogLevel.INFO, '-----------------------------------------')
+log.log(LogLevel.INFO, 'Threshold Method       : ' + THRESHOLD)
+log.log(LogLevel.INFO, 'Threshold Histo Calc   : ' + str(TH_STACKOPT))
+log.log(LogLevel.INFO, 'Threshold Corr-Factor  : ' + str(CORRFACTOR))
+log.log(LogLevel.INFO, '-----------------------------------------')
+log.log(LogLevel.INFO, 'Label Connectivity     : ' + str(LABEL_CONNECT))
+log.log(LogLevel.INFO, 'Colorize Labels        : ' + str(LABEL_COLORIZE))
+log.log(LogLevel.INFO, 'Minimum Voxel Size     : ' + str(MINVOXSIZE))
+log.log(LogLevel.INFO, '-----------------------------------------')
+log.log(LogLevel.INFO, 'Save Format used       : ' + SAVEFORMAT)
+log.log(LogLevel.INFO, '------------  START IMAGE ANALYSIS ------------')
 
 # run image analysis pipeline
 objstack, results, labels = run(imagefile)
 
 # show objects
-log.info('Show Objects inside stack ...')
+log.log(LogLevel.INFO, 'Show Objects inside stack ...')
 objstack.show()
 
-log.info('Show ResultsTable ...')
+log.log(LogLevel.INFO, 'Show ResultsTable ...')
 results.show('3D Objects')
 
 basename = os.path.splitext(imagefile)[0]
@@ -329,13 +331,13 @@ if basename[-4:] == '.ome':
 outputimagepath = basename + SUFFIX_PA + '.' + SAVEFORMAT
 
 if PASAVE:
-    log.info('Start Saving ...')
+    log.log(LogLevel.INFO, 'Start Saving ...')
     savepath_objstack = ExportTools.savedata(objstack,
                                              outputimagepath,
                                              extension=SAVEFORMAT,
                                              replace=True)
 
-    log.info('Saved Processed Image to : ' + savepath_objstack)
+    log.log(LogLevel.INFO, 'Saved Processed Image to : ' + savepath_objstack)
 
 # save the result file
 if RESULTSAVE:
@@ -346,7 +348,7 @@ if RESULTSAVE:
     # saving the result table
     rtsavelocation = basename + SUFFIX_RT + '.' + SAVEFORMAT_RT
     results.saveAs(rtsavelocation)
-    log.info('Save Results to : ' + rtsavelocation)
+    log.log(LogLevel.INFO, 'Save Results to : ' + rtsavelocation)
 
 # finish
-log.info('Done.')
+log.log(LogLevel.INFO, 'Done.')
